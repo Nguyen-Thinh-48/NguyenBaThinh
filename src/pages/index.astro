@@ -5,6 +5,7 @@ import ProjectCard from '../components/ProjectCard.astro';
 import StatGrid from '../components/StatGrid.astro';
 import CareerTree from '../components/CareerTree.astro';
 import PaperCard from '../components/PaperCard.astro';
+import Portrait from '../components/Portrait.astro';
 import { site } from '../site.config';
 import { url } from '../lib/url';
 
@@ -20,25 +21,29 @@ const restCount = projects.length - featured.length;
   <!-- Hero -->
   <section class="hero grid-bg">
     <div class="container hero-inner">
-      <p class="eyebrow">{site.location}</p>
+      <div class="hero-copy">
+        <p class="eyebrow">{site.location}</p>
 
-      <h1>
-        I build AI that runs<br />
-        <span class="accent">on the device</span>, not in the cloud.
-      </h1>
+        <h1>
+          I build AI that runs<br />
+          <span class="accent">on the device</span>, not in the cloud.
+        </h1>
 
-      <p class="lede hero-lede">{site.description}</p>
+        <p class="lede hero-lede">{site.description}</p>
 
-      <div class="hero-actions">
-        <a class="btn btn-primary" href={url('/projects')}>
-          See the work
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
-          </svg>
-        </a>
-        <a class="btn btn-ghost" href={url(site.cv)} target="_blank" rel="noopener">Download CV</a>
-        <a class="btn btn-ghost" href={`mailto:${site.email}`}>Email me</a>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href={url('/projects')}>
+            See the work
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
+            </svg>
+          </a>
+          <a class="btn btn-ghost" href={url(site.cv)} target="_blank" rel="noopener">Download CV</a>
+          <a class="btn btn-ghost" href={`mailto:${site.email}`}>Email me</a>
+        </div>
       </div>
+
+      <Portrait class="hero-portrait" size={210} />
 
       <div class="hero-stats">
         <StatGrid items={site.stats} />
@@ -166,10 +171,42 @@ const restCount = projects.length - featured.length;
   .hero-inner {
     position: relative;
     z-index: 1;
+    display: grid;
+    gap: 1.15rem;
+    align-items: start;
+    justify-items: start;
+  }
+
+  .hero-copy {
     display: flex;
     flex-direction: column;
     gap: 1.15rem;
     align-items: start;
+    min-width: 0;
+  }
+
+  /* The hero already carries a headline, a paragraph, three buttons and a stat
+     row. On a phone the portrait is one element too many, and the About page
+     shows it at full size anyway. */
+  .hero-portrait {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .hero-inner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: clamp(2rem, 5vw, 4rem);
+      align-items: center;
+    }
+
+    .hero-portrait {
+      display: block;
+      justify-self: end;
+    }
+
+    .hero-stats {
+      grid-column: 1 / -1;
+    }
   }
 
   .hero h1 {

@@ -1,0 +1,60 @@
+---
+import { url } from '../lib/url';
+import { site } from '../site.config';
+
+/**
+ * The headshot is a formal ID-style photo on a pure white background, which
+ * would read as a glaring white rectangle on the dark theme. Framing it as a
+ * deliberate print — inset border, offset accent outline behind — makes the
+ * white look intentional in both themes instead of accidental.
+ */
+interface Props {
+  /** Rendered width in px. The source is 284px wide, so keep this modest. */
+  size?: number;
+  class?: string;
+}
+
+const { size = 220, class: className } = Astro.props;
+---
+
+<div class:list={['portrait', className]} style={`--size: ${size}px`}>
+  <img
+    src={url('/media/profile/portrait.jpg')}
+    alt={site.name}
+    width="284"
+    height="378"
+    decoding="async"
+  />
+</div>
+
+<style>
+  .portrait {
+    position: relative;
+    width: var(--size);
+    max-width: 100%;
+    flex: none;
+  }
+
+  /* Offset outline peeking out behind the photo. */
+  .portrait::before {
+    content: '';
+    position: absolute;
+    inset: 14px -14px -14px 14px;
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius-lg);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  img {
+    position: relative;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 284 / 378;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    box-shadow: var(--shadow-lg);
+  }
+</style>
