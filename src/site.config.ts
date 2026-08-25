@@ -114,7 +114,8 @@ export const site = {
       start: '2025-03',
       end: '2025-10',
       tone: 'violet',
-      summary: '',
+      summary:
+        'Exam-hall IT support at a standardised testing centre: imaging and configuring Windows machines for the test labs, then keeping them running mid-session through network drops and hardware failures.',
     },
     {
       company: 'HBQ Technology',
