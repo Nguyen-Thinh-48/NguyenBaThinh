@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import StatGrid from '../components/StatGrid.astro';
 import CareerTree from '../components/CareerTree.astro';
+import PaperCard from '../components/PaperCard.astro';
 import { site } from '../site.config';
 import { url } from '../lib/url';
 
@@ -72,6 +73,22 @@ const restCount = projects.length - featured.length;
           </a>
         )
       }
+    </div>
+  </section>
+
+  <!-- Publication -->
+  <section class="section paper-section">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Published research</p>
+        <h2>The pruning result, peer reviewed</h2>
+        <p class="lede">
+          The structured pruning that made the face recognition model smaller and
+          more accurate was written up and published by Springer.
+        </p>
+      </div>
+
+      <PaperCard bare />
     </div>
   </section>
 
@@ -226,6 +243,12 @@ const restCount = projects.length - featured.length;
 
   .more:hover svg {
     transform: translateX(3px);
+  }
+
+  /* ---- Publication ---- */
+
+  .paper-section {
+    padding-top: 0;
   }
 
   /* ---- Expertise ---- */

@@ -17,7 +17,11 @@ tags:
   - Python
 source:
   state: private
-  note: Developed with HBQ Technology and as a university thesis, so the repository is closed. The measurements below are from the thesis report.
+  note: Developed with HBQ Technology and as a university thesis, so the repository is closed. The results below are the ones published in the paper.
+links:
+  - label: Read the paper (Springer)
+    url: https://link.springer.com/chapter/10.1007/978-3-032-21628-1_11
+    kind: paper
 video: /media/edge-ai-face-recognition/demo.mp4
 ratio: '9 / 16'
 mediaCaption: Live recognition on the terminal — detection, alignment and identity match running on-device.
@@ -144,6 +148,11 @@ A 20% smaller network scoring 6.4 points higher is not magic — it is the redun
 filters having acted as noise on the embedding. Cutting them tightened the clusters
 that cosine similarity has to separate.
 
+This result went through peer review and was published by Springer as
+[*Efficient Face Recognition on Embedded Devices via Structured Pruning and
+Stereo-Camera Feature Fusion*](https://link.springer.com/chapter/10.1007/978-3-032-21628-1_11)
+in **Computational Intelligence in Engineering Science** (CCIS, 2026, pp. 146–157).
+
 The honest caveat: in the current implementation the pruned filters are zeroed rather
 than physically removed from the graph, so the parameter count is the logical one. Doing
 the structural removal properly would recover the memory too, and it is the first item
@@ -218,8 +227,8 @@ The parts that are unglamorous but decide whether something ships:
 
 ## What I worked on
 
-Joint thesis work with Le Chi Thien, supervised by Dr. Cao Van Kien at Industrial
-University of Ho Chi Minh City, developed alongside HBQ Technology. My focus was the
-inference side: model conversion and HEF compilation, the structured pruning
-experiments, the dual-camera fusion, the anti-spoofing logic and the Hailo inference
-wrappers.
+Joint work with Le Chi Thien, supervised by Dr. Cao Van Kien at Industrial University
+of Ho Chi Minh City, developed alongside HBQ Technology and published with all three of
+us as authors. My focus was the inference side: model conversion and HEF compilation,
+the structured pruning experiments, the dual-camera fusion, the anti-spoofing logic and
+the Hailo inference wrappers.

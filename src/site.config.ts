@@ -68,15 +68,20 @@ export const site = {
     note: 'Completed degree requirements, awaiting graduation.',
   },
 
+  /** Peer-reviewed publication. Metadata verified against the Crossref record. */
   research: {
     title:
       'Efficient Face Recognition on Embedded Devices via Structured Pruning and Stereo-Camera Feature Fusion',
+    authors: ['Thien Le-Chi', 'Nguyen Ba Thinh', 'Cao Van Kien'],
+    venue: 'Computational Intelligence in Engineering Science',
+    series: 'Communications in Computer and Information Science',
+    publisher: 'Springer Nature Switzerland',
+    year: '2026',
+    pages: 'pp. 146–157',
+    doi: '10.1007/978-3-032-21628-1_11',
+    url: 'https://link.springer.com/chapter/10.1007/978-3-032-21628-1_11',
     advisor: 'Dr. Cao Van Kien',
-    note: 'Graduation thesis, Faculty of Electronics Technology.',
-    /** Where the paper is published. Leave empty and no link is rendered. */
-    url: '',
-    /** Journal, conference or repository name shown on the link. */
-    venue: '',
+    note: 'Grew out of the graduation thesis at Industrial University of Ho Chi Minh City.',
   },
 
   certificate: {

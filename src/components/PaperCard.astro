@@ -1,0 +1,152 @@
+---
+import { site } from '../site.config';
+
+/**
+ * The published paper, given its own band rather than a slot in a card grid.
+ * A peer-reviewed publication is the strongest single credential on the site,
+ * so it gets room to state the venue and the full citation.
+ */
+interface Props {
+  /** Drop the eyebrow when the surrounding section already has a heading. */
+  bare?: boolean;
+}
+
+const { bare = false } = Astro.props;
+const paper = site.research;
+
+// Highlight the site owner within the author list.
+const isOwner = (name: string) =>
+  name.replace(/[^a-z]/gi, '').toLowerCase() === site.name.replace(/[^a-z]/gi, '').toLowerCase();
+---
+
+<section class="paper">
+  {!bare && <p class="eyebrow">Peer-reviewed publication</p>}
+
+  <div class="body">
+    <h3 class="title">
+      <a href={paper.url} target="_blank" rel="noopener">{paper.title}</a>
+    </h3>
+
+    <p class="authors">
+      {
+        paper.authors.map((name, i) => (
+          <>
+            {i > 0 && <span class="sep">, </span>}
+            <span class:list={['author', { me: isOwner(name) }]}>{name}</span>
+          </>
+        ))
+      }
+    </p>
+
+    <p class="venue">
+      <em>{paper.venue}</em>
+      <span class="dot" aria-hidden="true">·</span>
+      {paper.series}
+      <span class="dot" aria-hidden="true">·</span>
+      {paper.publisher}, {paper.year}
+      <span class="dot" aria-hidden="true">·</span>
+      {paper.pages}
+    </p>
+
+    <p class="note">{paper.note}</p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href={paper.url} target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.4h7.5L19 8.9v11.7H6z" />
+          <path d="M13.2 3.6v5.4h5.4M9 13h6M9 16.4h6" />
+        </svg>
+        Read on SpringerLink
+      </a>
+      <span class="doi mono">DOI {paper.doi}</span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .paper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.5rem 1.6rem 1.6rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--signal);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .title {
+    font-size: clamp(1.05rem, 0.95rem + 0.55vw, 1.32rem);
+    line-height: 1.32;
+    max-width: 54ch;
+  }
+
+  .title a {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .title a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
+  }
+
+  .authors {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .author.me {
+    color: var(--text);
+    font-weight: 650;
+  }
+
+  .sep {
+    color: var(--text-faint);
+  }
+
+  .venue {
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .venue em {
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .dot {
+    color: var(--text-faint);
+    padding-inline: 0.3rem;
+  }
+
+  .note {
+    font-size: 0.84rem;
+    color: var(--text-faint);
+    max-width: 60ch;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.6rem;
+  }
+
+  .doi {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+  }
+</style>
