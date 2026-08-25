@@ -39,6 +39,11 @@ const projects = defineCollection({
     video: z.string().optional(),
     poster: z.string().optional(),
     image: z.string().optional(),
+    /**
+     * Aspect ratio of the hero media, as a CSS ratio. Set this to the real
+     * dimensions — a phone recording in a 16/9 frame is mostly black bars.
+     */
+    ratio: z.string().default('16 / 9'),
     /** Alt text / caption for the hero media. Required if `video` or `image` is set. */
     mediaCaption: z.string().optional(),
 

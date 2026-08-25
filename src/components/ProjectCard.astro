@@ -11,9 +11,14 @@ interface Props {
 const { project, featured = false } = Astro.props;
 const { data } = project;
 const href = url(`/projects/${project.id}`);
+
+// A portrait recording cropped to the card's 16:9 window would show a thin
+// horizontal band of the middle, so those are letterboxed instead.
+const [rw = 16, rh = 9] = data.ratio.split('/').map((n) => Number(n.trim()));
+const portrait = rh > rw;
 ---
 
-<article class:list={['project-card', { featured }]}>
+<article class:list={['project-card', { featured, portrait }]}>
   <a class="hit" href={href} aria-label={`Read the ${data.title} case study`}></a>
 
   <div class="media">
@@ -120,6 +125,11 @@ const href = url(`/projects/${project.id}`);
   .project-card:hover .media video,
   .project-card:hover .media img {
     transform: scale(1.03);
+  }
+
+  .portrait .media video,
+  .portrait .media img {
+    object-fit: contain;
   }
 
   .media-fallback {

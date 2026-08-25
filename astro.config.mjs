@@ -4,12 +4,12 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
 // Deployed to GitHub Pages as a *project* site, so the final URL is
-// https://nguyen-thinh-48.github.io/portfolio/
+// https://nguyen-thinh-48.github.io/portfolio-s-/
 // `base` must match the repository name. If you ever rename the repo, or move
 // to a custom domain, change these two lines and nothing else.
 export default defineConfig({
   site: 'https://nguyen-thinh-48.github.io',
-  base: '/portfolio',
+  base: '/portfolio-s-',
   trailingSlash: 'ignore',
   integrations: [mdx(), sitemap()],
   build: {

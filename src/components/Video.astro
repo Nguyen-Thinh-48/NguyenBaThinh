@@ -21,9 +21,14 @@ const {
   ratio = '16 / 9',
   class: className,
 } = Astro.props;
+
+// A phone recording is taller than it is wide. Left at full column width it
+// would be over a thousand pixels tall, so those get capped and centred.
+const [w = 16, h = 9] = ratio.split('/').map((n) => Number(n.trim()));
+const portrait = h > w;
 ---
 
-<figure class:list={['video-figure', className]}>
+<figure class:list={['video-figure', { portrait }, className]}>
   <div class="frame" style={`--ratio: ${ratio}`}>
     <video
       src={url(src)}
@@ -55,6 +60,18 @@ const {
     overflow: hidden;
     background: #05070b;
     box-shadow: var(--shadow-md);
+  }
+
+  /* 340px wide at 9:16 is ~600px tall — tall enough to read, short enough that
+     it does not push the rest of the case study off the screen. */
+  .portrait .frame {
+    max-width: 340px;
+    margin-inline: auto;
+  }
+
+  .portrait figcaption {
+    max-width: 340px;
+    margin-inline: auto;
   }
 
   video {

@@ -54,9 +54,15 @@ const { data } = project;
       (data.video || data.image) && (
         <div class="container hero-media">
           {data.video ? (
-            <Video src={data.video} poster={data.poster} caption={data.mediaCaption} />
+            <Video src={data.video} poster={data.poster} caption={data.mediaCaption} ratio={data.ratio} />
           ) : (
-            <Figure src={data.image!} alt={data.mediaCaption ?? data.title} caption={data.mediaCaption} fit="contain" />
+            <Figure
+              src={data.image!}
+              alt={data.mediaCaption ?? data.title}
+              caption={data.mediaCaption}
+              ratio={data.ratio}
+              fit="contain"
+            />
           )}
         </div>
       )
