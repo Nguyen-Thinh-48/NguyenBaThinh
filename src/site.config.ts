@@ -86,7 +86,7 @@ export const site = {
       role: 'Fullstack Engineer',
       period: 'May 2025 — Present',
       summary:
-        'Self-hosted conversational AI: an n8n + RAG chatbot answering Facebook and Instagram customers 24/7 from a company knowledge base.',
+        'Self-hosted conversational AI: an n8n + RAG support agent answering Facebook Messenger and Page comments 24/7, grounded in a PGVector knowledge base.',
     },
     {
       company: 'HBQ Technology',

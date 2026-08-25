@@ -30,7 +30,7 @@ const projects = defineCollection({
     source: z
       .object({
         state: z.enum(['public', 'private', 'none']).default('none'),
-        url: z.string().url().optional(),
+        url: z.url().optional(),
         note: z.string().optional(),
       })
       .default({ state: 'none' }),

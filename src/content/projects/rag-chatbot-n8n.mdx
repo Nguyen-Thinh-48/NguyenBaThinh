@@ -1,10 +1,10 @@
 ---
-title: Self-Hosted RAG Sales Chatbot
-tagline: A Messenger and Instagram assistant that answers only from the company's own documents — and hands the conversation to a human the moment one is needed.
+title: Self-Hosted RAG Support Agent
+tagline: A Facebook support assistant that answers only from the company's documents, queues its own work, and steps aside the moment a human takes over.
 summary: >-
-  An end-to-end automated chatbot on self-hosted n8n, answering Facebook Messenger
-  messages and Page comments around the clock from a PGVector knowledge base, with
-  a LangChain + Gemini sales agent, automatic document sync and clean human handover.
+  A production n8n automation answering Facebook Messenger and Page comments from
+  a PGVector knowledge base, built as a webhook-plus-worker queue with a status
+  state machine, self-syncing document ingestion and per-user human handover.
 org: BEE HOOME TECHNOLOGY JSC
 role: Fullstack Engineer
 period: May 2025 — Present
@@ -12,30 +12,34 @@ order: 5
 featured: false
 tags:
   - LLM
+  - RAG
   - Backend
   - Docker
 source:
   state: private
-  note: Production automation for a client brand. The workflows and knowledge base are not public.
+  note: Production automation for a client brand. The workflow and knowledge base are not public, and every credential, endpoint and identifier is omitted here.
 image: /media/rag-chatbot-n8n/vector-space.svg
-mediaCaption: Retrieval as it actually works — a query embedding and its nearest document chunks in the vector store.
+mediaCaption: Retrieval as it actually works — a query embedding and the nearest document chunks in the vector store.
 highlights:
-  - value: '24/7'
-    label: Unattended first response on Messenger, Instagram and Page comments
-  - value: '~800'
+  - value: '3'
+    unit: s
+    label: Worker poll interval — the webhook itself answers instantly
+  - value: '800'
     unit: tok
-    label: Chunk size the knowledge base is split into before embedding
+    label: Chunk size, with 100 tokens of overlap
+  - value: '3'
+    label: Top-k chunks retrieved and handed to the model per question
   - value: '2'
     label: Containers running the entire stack on one VPS
 stack:
   - group: Orchestration
-    items: ['n8n (self-hosted)', 'Webhooks', 'n8n Data Tables', 'JavaScript', 'JSON']
+    items: ['n8n (self-hosted)', 'Webhooks', 'Schedule triggers', 'n8n Data Tables', 'JavaScript', 'JSON']
   - group: AI
-    items: ['Google Gemini', 'LangChain AI Agent', 'Gemini Embeddings', 'RAG']
+    items: ['LangChain AI Agent', 'Google Gemini Flash Lite', 'Gemini embeddings', 'RAG retrieval tool', 'Token splitter']
   - group: Data
-    items: ['PostgreSQL', 'PGVector', 'Postgres chat memory']
+    items: ['PostgreSQL', 'PGVector', 'Postgres chat memory', 'Vector similarity search']
   - group: Integrations
-    items: ['Facebook Graph API v19.0', 'Google Drive API']
+    items: ['Facebook Graph API', 'Google Drive API', 'Messaging platform APIs', 'Telegram alerts']
   - group: Infrastructure
     items: ['Docker', 'Docker Compose', 'Linux VPS']
 ---
@@ -45,130 +49,314 @@ import Diagram from '../../components/Diagram.astro';
 
 ## The problem
 
-A premium kitchen-cabinet brand was losing enquiries to response time. Customers ask on
-Messenger and in the comments under a Page post, often outside working hours, and a cold
-lead by morning is usually a lost one.
+Customers ask about products on Messenger and in the comments under a Page post,
+usually outside working hours. A cold enquiry by morning is normally a lost one.
 
-A generic chatbot makes this worse rather than better. If it invents a product finish, a
-lead time or a price, the brand pays for that mistake. So the requirement was narrower
-than "add an LLM": answer from the company's own documents, or do not answer.
+A generic chatbot makes that worse rather than better. If it invents a price, a lead
+time or a feature that does not exist, the brand pays for the mistake. So the
+requirement was narrower than "add an LLM": **answer from the company's own documents,
+or admit you do not know and hand the person to a human.**
+
+## Why the webhook does not answer the question
+
+This is the decision the rest of the system is built around, and it is the one that
+took the longest to get right.
+
+Facebook expects a `200` back from your webhook quickly. Retrieval plus a model call
+is nowhere near quick enough. The naive workflow — receive, retrieve, generate, reply,
+*then* respond — times out, and Facebook retries, and now the customer gets the same
+answer three times.
+
+So the webhook does almost nothing. It parses the event, drops obvious noise, writes
+one row to a table with `Status: pending`, and returns. **A separate schedule trigger
+polls that table every three seconds** and does the slow work outside the request.
 
 <MediaSplit wide>
-  <Diagram slot="media" caption="The message path. Retrieval runs before generation, so the model is answering from documents rather than from memory.">
-    <svg viewBox="0 0 520 372" role="img" aria-label="Message flow: a Facebook or Instagram webhook enters n8n, passes an echo and duplicate filter and a per-user bot toggle, retrieves context from PGVector, is answered by a LangChain Gemini agent, and replies to the customer.">
+  <Diagram slot="media" caption="Ingest and processing are separate workflows joined only by a row in a table. Below the dashed line, Facebook has already been answered.">
+    <svg viewBox="0 0 520 424" role="img" aria-label="Queue architecture: the Facebook webhook responds immediately and writes a pending row; a schedule trigger every three seconds claims the row, marks it processing, runs the agent, and marks it done or error.">
       <defs>
-        <marker id="rag-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <marker id="q-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
         </marker>
       </defs>
 
-      <rect x="40" y="12" width="440" height="48" rx="9" class="d-box" />
-      <text x="260" y="34" text-anchor="middle" class="d-label">Facebook / Instagram webhook</text>
-      <text x="260" y="49" text-anchor="middle" class="d-sub">Graph API v19.0 · messages + Page comments</text>
+      <rect x="40" y="10" width="440" height="42" rx="9" class="d-box-accent" />
+      <text x="260" y="29" text-anchor="middle" class="d-label">Facebook webhook (POST)</text>
+      <text x="260" y="44" text-anchor="middle" class="d-sub">responds 200 before any AI work starts</text>
 
-      <line x1="260" y1="60" x2="260" y2="86" class="d-edge" marker-end="url(#rag-arrow)" />
+      <line x1="260" y1="52" x2="260" y2="76" class="d-edge" marker-end="url(#q-arrow)" />
 
-      <rect x="40" y="88" width="440" height="48" rx="9" class="d-box" />
-      <text x="260" y="110" text-anchor="middle" class="d-label">n8n gate</text>
-      <text x="260" y="125" text-anchor="middle" class="d-sub">echo + duplicate filter · per-user bot ON/OFF</text>
+      <rect x="40" y="78" width="440" height="42" rx="9" class="d-box" />
+      <text x="260" y="97" text-anchor="middle" class="d-label">Parse + filter</text>
+      <text x="260" y="112" text-anchor="middle" class="d-sub">echo · the Page's own replies · /bot_on commands</text>
 
-      <line x1="260" y1="136" x2="260" y2="162" class="d-edge-accent" marker-end="url(#rag-arrow)" />
+      <line x1="260" y1="120" x2="260" y2="144" class="d-edge" marker-end="url(#q-arrow)" />
 
-      <rect x="40" y="164" width="440" height="48" rx="9" class="d-box-accent" />
-      <text x="260" y="186" text-anchor="middle" class="d-label">Retrieval — PGVector</text>
-      <text x="260" y="201" text-anchor="middle" class="d-sub">top-k chunks from the company knowledge base</text>
+      <rect x="40" y="146" width="440" height="46" rx="9" class="d-box-signal" />
+      <text x="260" y="166" text-anchor="middle" class="d-label">Queue row — Status: pending</text>
+      <text x="260" y="181" text-anchor="middle" class="d-sub">n8n Data Table · one row per inbound message</text>
 
-      <line x1="260" y1="212" x2="260" y2="238" class="d-edge-accent" marker-end="url(#rag-arrow)" />
+      <line x1="30" y1="208" x2="490" y2="208" class="d-edge" stroke-dasharray="5 4" />
+      <text x="260" y="222" text-anchor="middle" class="d-edge-label">the HTTP request has already ended here</text>
 
-      <rect x="40" y="240" width="440" height="48" rx="9" class="d-box-accent" />
-      <text x="260" y="262" text-anchor="middle" class="d-label">LangChain agent — Gemini</text>
-      <text x="260" y="277" text-anchor="middle" class="d-sub">brand persona · strict answer rules · Postgres memory</text>
+      <rect x="40" y="234" width="440" height="42" rx="9" class="d-box-accent" />
+      <text x="260" y="253" text-anchor="middle" class="d-label">Schedule trigger — every 3 s</text>
+      <text x="260" y="268" text-anchor="middle" class="d-sub">reads pending rows · one at a time</text>
 
-      <line x1="260" y1="288" x2="260" y2="314" class="d-edge" marker-end="url(#rag-arrow)" />
+      <line x1="260" y1="276" x2="260" y2="300" class="d-edge-accent" marker-end="url(#q-arrow)" />
+      <text x="272" y="292" class="d-edge-label">claim the row</text>
 
-      <rect x="40" y="316" width="440" height="44" rx="9" class="d-box-signal" />
-      <text x="260" y="336" text-anchor="middle" class="d-label">Reply — or hand over to a person</text>
-      <text x="260" y="351" text-anchor="middle" class="d-sub">status tracked per customer in n8n Data Tables</text>
+      <rect x="40" y="302" width="440" height="42" rx="9" class="d-box" />
+      <text x="260" y="321" text-anchor="middle" class="d-label">Status: processing</text>
+      <text x="260" y="336" text-anchor="middle" class="d-sub">retrieval → agent → send the reply</text>
+
+      <line x1="150" y1="344" x2="150" y2="368" class="d-edge" marker-end="url(#q-arrow)" />
+      <line x1="370" y1="344" x2="370" y2="368" class="d-edge" marker-end="url(#q-arrow)" />
+
+      <rect x="40" y="370" width="200" height="42" rx="9" class="d-box-signal" />
+      <text x="140" y="389" text-anchor="middle" class="d-label">Done</text>
+      <text x="140" y="404" text-anchor="middle" class="d-sub">reply delivered</text>
+
+      <rect x="280" y="370" width="200" height="42" rx="9" class="d-box" />
+      <text x="380" y="389" text-anchor="middle" class="d-label">Error</text>
+      <text x="380" y="404" text-anchor="middle" class="d-sub">Telegram alert to me</text>
     </svg>
   </Diagram>
 
-  ### Grounded, or silent
+  ### A row is a job
 
-  Every incoming message is embedded and used to retrieve the closest chunks from a
-  **PostgreSQL + PGVector** store before the model sees it. The agent's instructions
-  scope it hard: answer from the retrieved context, stay in the brand's voice, and when
-  the knowledge base does not cover the question, say so and escalate rather than
-  improvise.
+  Every message becomes a row whose `Status` walks a small state machine:
+  `pending → processing → Done`, with `Error` and `skipped` as the other exits.
 
-  Multi-turn context comes from **Postgres chat memory**, so a customer who asks "and in
-  matte?" three messages later is still talking about the same cabinet door.
+  That one column buys a lot:
 
-  Two details that decide whether this survives contact with production: **echo and
-  duplicate filtering**, because the Page's own replies come back through the webhook and
-  will happily start an infinite conversation with itself, and **a per-user ON/OFF
-  toggle**, so a salesperson can take over a thread and the bot goes quiet for that
-  customer only.
+  - **Crash safety.** A row stuck on `processing` is visible. Nothing is lost in memory.
+  - **Idempotency.** A Facebook retry finds the message already recorded rather than
+    generating a second answer.
+  - **Back-pressure.** Messages are claimed one at a time, so a burst of traffic queues
+    instead of firing twenty concurrent model calls.
+  - **Observability.** "What happened to this customer's message?" is a table lookup,
+    not a log grep.
+
+  It is the same pattern as a job queue with a database backend. n8n does not ship one,
+  so the Data Table became it.
 </MediaSplit>
 
-<MediaSplit flip>
-  <Diagram slot="media" caption="Knowledge base sync. Dropping a PDF in a Drive folder is the whole publishing workflow.">
-    <svg viewBox="0 0 520 224" role="img" aria-label="Knowledge base sync: a Google Drive trigger detects a new document, splits it into 800-token chunks, embeds them with Gemini and upserts them into PGVector.">
+## Retrieval, and what is actually happening
+
+The part that matters for grounding is small and worth being precise about, because
+"we used RAG" hides all of it.
+
+<MediaSplit flip wide>
+  <Diagram slot="media" caption="The retrieval path. The model never sees the knowledge base — it sees three chunks that were closest to the question.">
+    <svg viewBox="0 0 520 372" role="img" aria-label="Retrieval path: the customer question is embedded, compared by cosine similarity against chunk vectors in PGVector, and the top three chunks are given to a Gemini agent along with the last four turns of chat memory.">
       <defs>
-        <marker id="kb-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <marker id="r-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
         </marker>
       </defs>
 
-      <rect x="40" y="12" width="440" height="48" rx="9" class="d-box" />
-      <text x="260" y="34" text-anchor="middle" class="d-label">Google Drive folder</text>
-      <text x="260" y="49" text-anchor="middle" class="d-sub">new or updated product document</text>
+      <rect x="40" y="10" width="440" height="44" rx="9" class="d-box" />
+      <text x="260" y="30" text-anchor="middle" class="d-label">Customer question</text>
+      <text x="260" y="45" text-anchor="middle" class="d-sub">free text, any language</text>
 
-      <line x1="260" y1="60" x2="260" y2="86" class="d-edge" marker-end="url(#kb-arrow)" />
-      <text x="272" y="79" class="d-edge-label">Drive trigger</text>
+      <line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#r-arrow)" />
 
-      <rect x="40" y="88" width="440" height="48" rx="9" class="d-box" />
-      <text x="260" y="110" text-anchor="middle" class="d-label">Split into ~800-token chunks</text>
-      <text x="260" y="125" text-anchor="middle" class="d-sub">overlapping · one topic per chunk</text>
+      <rect x="40" y="80" width="440" height="44" rx="9" class="d-box-accent" />
+      <text x="260" y="100" text-anchor="middle" class="d-label">Embed the question</text>
+      <text x="260" y="115" text-anchor="middle" class="d-sub">Gemini embeddings — same model used for the documents</text>
 
-      <line x1="260" y1="136" x2="260" y2="162" class="d-edge-accent" marker-end="url(#kb-arrow)" />
+      <line x1="260" y1="124" x2="260" y2="148" class="d-edge-accent" marker-end="url(#r-arrow)" />
+      <text x="272" y="140" class="d-edge-label">one vector</text>
 
-      <rect x="40" y="164" width="440" height="48" rx="9" class="d-box-accent" />
-      <text x="260" y="186" text-anchor="middle" class="d-label">Gemini embeddings → upsert</text>
-      <text x="260" y="201" text-anchor="middle" class="d-sub">PGVector · no manual step anywhere</text>
+      <rect x="40" y="150" width="440" height="52" rx="9" class="d-box-accent" />
+      <text x="260" y="172" text-anchor="middle" class="d-label">PGVector similarity search</text>
+      <text x="260" y="188" text-anchor="middle" class="d-sub">cosine distance over chunk vectors · top-k = 3</text>
+
+      <line x1="260" y1="202" x2="260" y2="226" class="d-edge-accent" marker-end="url(#r-arrow)" />
+      <text x="272" y="218" class="d-edge-label">3 chunks of source text</text>
+
+      <rect x="40" y="228" width="440" height="60" rx="9" class="d-box-signal" />
+      <text x="260" y="250" text-anchor="middle" class="d-label">Agent — Gemini Flash Lite</text>
+      <text x="260" y="265" text-anchor="middle" class="d-sub">temperature 0.3 · max 400 output tokens</text>
+      <text x="260" y="279" text-anchor="middle" class="d-sub">+ last 4 turns from Postgres chat memory</text>
+
+      <line x1="260" y1="288" x2="260" y2="312" class="d-edge" marker-end="url(#r-arrow)" />
+
+      <rect x="40" y="314" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="335" text-anchor="middle" class="d-label">Answer — or an honest "I don't have that"</text>
+      <text x="260" y="350" text-anchor="middle" class="d-sub">out-of-scope questions escalate to a human</text>
     </svg>
   </Diagram>
 
-  ### The knowledge base maintains itself
+  ### Retrieval is a tool, not a preprocessing step
 
-  The failure mode of every RAG system is a stale index. If updating what the bot knows
-  requires an engineer, it stops happening, and the bot starts confidently quoting last
-  season's catalogue.
+  The knowledge base is wired to the agent as a **tool it can call**, not as text
+  stapled to the front of the prompt. The agent decides a lookup is needed, issues the
+  query, and reasons over what comes back. Questions that need no documents skip
+  retrieval entirely.
 
-  So the sync is a trigger, not a task. A **Google Drive watcher** picks up new and
-  changed files, splits them into roughly **800-token chunks**, embeds each one with
-  Gemini and upserts it into the vector store.
+  Three settings do most of the work:
 
-  The person who owns the product information drops a file in a folder. That is the
-  entire publishing workflow, and it is why the knowledge base is still current.
+  - **`top-k = 3`.** More chunks is not better. Past a handful, the relevant passage
+    gets buried and answers drift toward whatever filler was retrieved alongside it.
+  - **`temperature = 0.3`.** Support answers should be reproducible. Two customers
+    asking the same question should get the same reply.
+  - **A 400-token output cap**, backed by a length rule in the instructions. Nobody
+    reads a nine-paragraph Messenger reply.
+
+  The question and the documents go through the **same embedding model**. That is not
+  an optimisation, it is a correctness requirement — vectors from two different models
+  live in different spaces and their cosine distance means nothing.
 </MediaSplit>
+
+## The knowledge base syncs itself
+
+Every RAG system dies the same death: the index goes stale, and the bot starts
+confidently quoting a catalogue from last season. If updating what the bot knows needs
+an engineer, it stops happening.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="Ingestion. The comparison step is what stops the same document being re-embedded on every run.">
+    <svg viewBox="0 0 520 356" role="img" aria-label="Ingestion pipeline: a Google Drive trigger lists knowledge base files, compares them against files already on disk, downloads only what is new, splits into 800-token chunks with 100 token overlap, embeds and upserts into PGVector.">
+      <defs>
+        <marker id="kb2-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="10" width="440" height="44" rx="9" class="d-box" />
+      <text x="260" y="30" text-anchor="middle" class="d-label">Google Drive trigger</text>
+      <text x="260" y="45" text-anchor="middle" class="d-sub">a document is added or changed</text>
+
+      <line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#kb2-arrow)" />
+
+      <rect x="40" y="80" width="440" height="48" rx="9" class="d-box-accent" />
+      <text x="260" y="101" text-anchor="middle" class="d-label">Compare against what is already stored</text>
+      <text x="260" y="116" text-anchor="middle" class="d-sub">Drive listing vs. local files · only differences continue</text>
+
+      <line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#kb2-arrow)" />
+      <text x="272" y="144" class="d-edge-label">new and changed only</text>
+
+      <rect x="40" y="154" width="440" height="44" rx="9" class="d-box" />
+      <text x="260" y="174" text-anchor="middle" class="d-label">Download and load</text>
+      <text x="260" y="189" text-anchor="middle" class="d-sub">filename kept as chunk metadata</text>
+
+      <line x1="260" y1="198" x2="260" y2="222" class="d-edge" marker-end="url(#kb2-arrow)" />
+
+      <rect x="40" y="224" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="245" text-anchor="middle" class="d-label">Token splitter</text>
+      <text x="260" y="260" text-anchor="middle" class="d-sub">800-token chunks · 100-token overlap</text>
+
+      <line x1="260" y1="272" x2="260" y2="296" class="d-edge-accent" marker-end="url(#kb2-arrow)" />
+
+      <rect x="40" y="298" width="440" height="48" rx="9" class="d-box-signal" />
+      <text x="260" y="319" text-anchor="middle" class="d-label">Embed → upsert into PGVector</text>
+      <text x="260" y="334" text-anchor="middle" class="d-sub">no manual step anywhere in the chain</text>
+    </svg>
+  </Diagram>
+
+  ### Why 800 and 100
+
+  **800 tokens** is roughly one coherent topic — a full procedure or a complete policy
+  paragraph. Smaller chunks retrieve cleanly but arrive without the context that makes
+  them usable; larger ones dilute the embedding until it stops matching anything
+  specific.
+
+  **100 tokens of overlap** exists because a splitter has no idea where an idea ends. It
+  will happily cut a seven-step procedure between step four and step five. Overlap means
+  the boundary appears in both chunks, so whichever one is retrieved still carries the
+  seam.
+
+  **The comparison step** is the unglamorous one that matters most. Without it, every
+  trigger re-downloads and re-embeds the whole folder — burning embedding quota and
+  filling the store with duplicate vectors that then compete with each other at query
+  time. Only new and changed files go through.
+
+  The person who owns the product information drops a file in a Drive folder. That is
+  the entire publishing workflow, and it is why the knowledge base is still current.
+</MediaSplit>
+
+## Two agents, not one
+
+Messenger and Page comments look similar and behave differently. A private message is a
+conversation; a public comment is a reply visible to everyone else reading the post.
+
+They run as **separate agents with separate memory tables**, keyed differently — a
+Messenger session is the sender, a comment session is scoped to the comment thread — so
+a public thread never inherits context from someone's private conversation, which would
+be both wrong and a privacy problem.
+
+Both share one instruction set with a strict precedence:
+
+1. **Reply in the language the customer wrote in.** The knowledge base is in English;
+   retrieved English text must never drag the reply into English. This needed explicit,
+   repeated instruction — it is the rule models break most often.
+2. **The retrieved chunks are the only source of truth.** Facts, step counts, button
+   labels and policy terms come from the documents, in the documents' wording.
+3. **Not in the chunks? Say so and escalate.** Never fill the gap.
+4. **Answer length caps**, with numbered steps for procedures.
+5. **Never disclose infrastructure**, internal identifiers, admin workflows or roadmap
+   material, even when asked directly.
+
+Rule 3 is the whole product. A support bot that says "I don't have that, here is who
+does" is useful. One that guesses is a liability.
+
+## Handing over to a human
+
+A per-user toggle lives in its own table. A salesperson sends a command in the thread,
+the bot goes quiet **for that customer only**, and everyone else keeps being served.
+Switching it back is the opposite command.
+
+Two filters keep the system from talking to itself:
+
+- **Echo filtering.** The Page's own outgoing messages come back through the webhook.
+  Without a filter the bot reads its own reply as a new customer message and answers it,
+  forever.
+- **Command filtering.** Operator commands are routed to the toggle instead of being
+  treated as questions.
+
+## When it breaks
+
+Model calls fail. The agents retry, and a failure that survives the retry does not
+disappear quietly: the row is marked `Error` and **a Telegram message arrives with the
+customer's ID and what they asked**, so a human can pick it up while the enquiry is
+still warm.
+
+The failure mode I care about is not "the bot was wrong" — it is "nobody knew the bot
+was wrong". Every exit from the state machine is recorded.
 
 ## Why self-hosted
 
-The whole stack — n8n and PostgreSQL with the PGVector extension — runs in **Docker
-Compose on a single VPS**. That was a deliberate choice over the managed equivalents.
+n8n and PostgreSQL with the PGVector extension run in **Docker Compose on a single
+VPS**, deliberately rather than on the managed equivalents.
 
-- **The customer conversations stay on infrastructure the company controls.** For a brand
+- **Customer conversations stay on infrastructure the company controls.** For a brand
   handling enquiries and contact details, that is not a preference.
-- **Cost is a fixed server bill** rather than per-execution pricing that scales with
-  exactly the thing you are trying to encourage.
-- **Scaling and backup are ordinary ops problems** with ordinary answers, instead of tier
-  limits.
+- **Cost is a fixed server bill**, not per-execution pricing that scales with exactly the
+  thing you are trying to encourage.
+- **Backup and scaling are ordinary ops problems** with ordinary answers.
 
-The trade is real: nobody else is on call for the VPS. For a workload of this size that
-has been the right side of the trade.
+The trade is real — nobody else is on call for that VPS. At this workload it has been
+the right side of the trade.
+
+## Understanding it from the bottom, not the docs
+
+I could wire this together because I had already built the pieces by hand. The
+[transformer and INT8 project](/projects/llm-from-scratch) is where I wrote the
+tokenizer, the attention, the embedding table and the quantizer myself.
+
+That is why the choices above are choices rather than defaults. Knowing that an
+embedding is a learned vector and cosine similarity is just a normalised dot product is
+what makes "use the same model for queries and documents" obviously mandatory instead of
+a line in a tutorial. Knowing what a context window costs is what makes a 4-turn memory
+and a 3-chunk retrieval a budget rather than a guess.
+
+n8n is the fast way to ship it. Knowing what is underneath is what makes it debuggable
+when it misbehaves.
 
 ## What I built
 
-The n8n workflows, the RAG pipeline and its Drive sync, the agent instructions and answer
-rules, the handover and deduplication logic, and the Docker deployment. It runs in
-production for the client brand today.
+The workflows, the queue and state machine, the RAG pipeline and its self-syncing
+ingestion, the agent instructions and answer rules, the handover and deduplication
+logic, the error alerting, and the Docker deployment. It runs in production today.
