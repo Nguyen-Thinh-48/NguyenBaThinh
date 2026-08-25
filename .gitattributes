@@ -1,0 +1,13 @@
+# Normalise to LF in the repository; Git checks out whatever the OS prefers.
+* text=auto eol=lf
+
+# Never touch these.
+*.mp4 binary
+*.mov binary
+*.webm binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff2 binary

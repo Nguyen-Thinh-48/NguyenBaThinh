@@ -1,0 +1,118 @@
+---
+title: Muscle Group Detection & Robot Arm
+tagline: A vision model taken from a PyTorch checkpoint to a TensorRT engine on a Jetson Nano, driving a physical arm.
+summary: >-
+  A personal project on the deployment half of computer vision: detecting muscle
+  groups from video, then converting the model through ONNX to a TensorRT engine
+  so it runs fast enough on a Jetson Nano to drive a robot arm in real time.
+org: Personal project
+role: Author
+period: '2026'
+order: 4
+featured: false
+tags:
+  - Edge AI
+  - Computer Vision
+  - Python
+source:
+  state: none
+  note: A personal build with no public repository. The recording below is the demonstration.
+video: /media/muscle-detection-robot-arm/demo.mp4
+mediaCaption: The arm responding to the detector's output.
+highlights:
+  - value: '~30'
+    unit: '%'
+    label: Inference latency removed by the TensorRT engine build
+  - value: '3'
+    label: Stage deployment path — PyTorch to ONNX to TensorRT
+stack:
+  - group: Language
+    items: ['Python']
+  - group: Model & runtime
+    items: ['PyTorch', 'YOLO', 'ONNX', 'TensorRT']
+  - group: Vision
+    items: ['OpenCV', 'Video pipeline processing']
+  - group: Hardware
+    items: ['Jetson Nano B01', 'OV5647 camera', 'Robot arm']
+---
+
+import MediaSplit from '../../components/MediaSplit.astro';
+import Video from '../../components/Video.astro';
+import Diagram from '../../components/Diagram.astro';
+
+## The idea
+
+Detect muscle groups from video and turn that into something a machine acts on. The
+detection is a YOLO-family model; the interesting half is everything after training,
+because a model that scores well in a notebook and a model that keeps a robot arm
+responsive are two different artefacts.
+
+This was a personal project, built to practise the deployment path end to end on
+hardware I could hold: a Jetson Nano B01 with an OV5647 camera and an arm on the desk.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="The deployment path. Each hop discards something — a framework, then a device abstraction — in exchange for speed.">
+    <svg viewBox="0 0 520 344" role="img" aria-label="Deployment pipeline: a trained PyTorch model is exported to ONNX, compiled to a TensorRT engine, and run on a Jetson Nano with a camera and robot arm.">
+      <defs>
+        <marker id="trt-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="12" width="440" height="54" rx="9" class="d-box" />
+      <text x="260" y="35" text-anchor="middle" class="d-label">PyTorch — trained checkpoint</text>
+      <text x="260" y="51" text-anchor="middle" class="d-sub">YOLO-family detector · .pt</text>
+
+      <line x1="260" y1="66" x2="260" y2="98" class="d-edge" marker-end="url(#trt-arrow)" />
+      <text x="272" y="87" class="d-edge-label">torch.onnx.export · opset · dynamic axes</text>
+
+      <rect x="40" y="100" width="440" height="54" rx="9" class="d-box" />
+      <text x="260" y="123" text-anchor="middle" class="d-label">ONNX graph</text>
+      <text x="260" y="139" text-anchor="middle" class="d-sub">framework-free · inspectable · portable</text>
+
+      <line x1="260" y1="154" x2="260" y2="186" class="d-edge-accent" marker-end="url(#trt-arrow)" />
+      <text x="272" y="175" class="d-edge-label">FP16 · layer and tensor fusion</text>
+
+      <rect x="40" y="188" width="440" height="54" rx="9" class="d-box-accent" />
+      <text x="260" y="211" text-anchor="middle" class="d-label">TensorRT engine</text>
+      <text x="260" y="227" text-anchor="middle" class="d-sub">compiled on the target device · ~30% faster</text>
+
+      <line x1="260" y1="242" x2="260" y2="274" class="d-edge" marker-end="url(#trt-arrow)" />
+
+      <rect x="40" y="276" width="440" height="54" rx="9" class="d-box-signal" />
+      <text x="260" y="299" text-anchor="middle" class="d-label">Jetson Nano B01</text>
+      <text x="260" y="315" text-anchor="middle" class="d-sub">OV5647 capture · OpenCV · robot arm control</text>
+    </svg>
+  </Diagram>
+
+  ### Why the conversion is the work
+
+  Exporting to ONNX is where most of the surprises live. Operators that PyTorch resolves
+  at runtime have to become static graph nodes; the opset version decides whether an op
+  exports cleanly or turns into a slow decomposition; and getting the dynamic axes wrong
+  means an engine that only accepts one batch size and one resolution.
+
+  TensorRT then compiles that graph **for the specific device it will run on**. It fuses
+  layers, picks kernels by benchmarking them, and drops to FP16 where the accuracy loss
+  is acceptable. The engine file is not portable — build it on the Jetson, not on the
+  workstation.
+
+  The payoff was roughly **30% lower inference latency** than the unoptimised path, which
+  is the difference between an arm that tracks and an arm that lags behind what it is
+  looking at.
+</MediaSplit>
+
+## What I took from it
+
+The Hailo work and this project attack the same problem from two vendors. Hailo compiles
+to `.hef` and TensorRT compiles to `.plan`, but the shape of the job is identical:
+get the graph out of the training framework cleanly, understand what the compiler is
+allowed to change, and verify accuracy *after* conversion rather than trusting it.
+
+Having done both means I read a new accelerator's SDK looking for the same three things
+rather than starting over.
+
+## Status
+
+Personal project, no public repository. The recording above is the demonstration; the
+numbers are from my own measurements on the Jetson.

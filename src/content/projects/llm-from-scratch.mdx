@@ -1,0 +1,184 @@
+---
+title: Transformers & INT8 From Scratch
+tagline: A character-level GPT and its INT8 quantizer written line by line, so the numbers on an edge accelerator stop being a black box.
+summary: >-
+  A self-directed study project: tokenizer, positional encoding, attention, a
+  full GPT and an INT8 quantization pipeline implemented from first principles in
+  PyTorch, with every architectural choice measured rather than assumed.
+org: Personal project
+role: Author
+period: 2026 — ongoing
+order: 3
+featured: true
+tags:
+  - LLM
+  - Python
+  - Quantization
+source:
+  state: public
+  url: https://github.com/Nguyen-Thinh-48/AI_agent_learn_project
+image: /media/llm-from-scratch/attention.svg
+mediaCaption: The causal attention mask — the lower triangle carries weight, everything above it is hidden from the query.
+highlights:
+  - value: '883'
+    unit: K
+    label: Parameters in the char-level GPT, every layer hand-written
+  - value: '1.389'
+    label: Validation loss, against a 5.429 blind-guess baseline
+  - value: '2.2'
+    unit: '×'
+    label: Measured cost of doubling context, for 0.032 loss gained
+  - value: '8'
+    label: Rungs of INT8 quantization built from affine scaling upward
+stack:
+  - group: Core
+    items: ['Python', 'PyTorch', 'NumPy', 'Jupyter']
+  - group: Topics implemented
+    items: ['Character tokenizer', 'BPE', 'Positional embedding', 'Multi-head attention', 'Causal masking', 'Layer normalisation']
+  - group: Quantization
+    items: ['Affine INT8', 'Per-tensor scaling', 'Outlier clipping', 'Calibration sets', 'Dynamic quantization']
+  - group: Runtime
+    items: ['ONNX', 'ONNX Runtime GPU', 'Interactive HTML visualisers']
+---
+
+import MediaSplit from '../../components/MediaSplit.astro';
+import Diagram from '../../components/Diagram.astro';
+
+## Why write it by hand
+
+I spend most of my time putting models on accelerators. That job goes badly if you
+treat the model as a file. When a network drops six points of accuracy after INT8
+conversion, "the quantizer did it" is not a diagnosis.
+
+So I rebuilt the stack from the bottom: a tokenizer, then positional encoding, then
+attention, then a working GPT, then an INT8 quantizer for it — each in a notebook, each
+with the intermediate tensors printed and checked. The corpus is Vietnamese text, which
+made the character-level vocabulary interesting on its own: `à á ả ã ạ` are five
+distinct characters, so `V` grows to **228** for 409,721 characters of text.
+
+Everything is measured against a calibration point that costs nothing to compute: an
+untrained model should sit at `ln(V) = 5.429`. If a freshly initialised network does not
+report that loss, there is a bug, and no amount of training will fix it.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="The model as built: 883,172 parameters at C=128, n_layer=2, and where every one of them lives.">
+    <svg viewBox="0 0 520 352" role="img" aria-label="GPT architecture: token and positional embeddings feed a residual stream of width 128, through transformer blocks containing multi-head attention and a feed-forward network, into a language-model head over 228 characters.">
+      <defs>
+        <marker id="gpt-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="12" width="190" height="46" rx="9" class="d-box" />
+      <text x="135" y="32" text-anchor="middle" class="d-label">token_emb</text>
+      <text x="135" y="47" text-anchor="middle" class="d-sub">228 × 128 = 29,184</text>
+
+      <rect x="290" y="12" width="190" height="46" rx="9" class="d-box" />
+      <text x="385" y="32" text-anchor="middle" class="d-label">pos_emb</text>
+      <text x="385" y="47" text-anchor="middle" class="d-sub">256 × 128 = 32,768</text>
+
+      <line x1="135" y1="58" x2="135" y2="88" class="d-edge" marker-end="url(#gpt-arrow)" />
+      <line x1="385" y1="58" x2="385" y2="88" class="d-edge" marker-end="url(#gpt-arrow)" />
+
+      <rect x="40" y="90" width="440" height="38" rx="9" class="d-box" />
+      <text x="260" y="114" text-anchor="middle" class="d-label">residual stream — [B, T, C = 128]</text>
+
+      <line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#gpt-arrow)" />
+
+      <rect x="40" y="154" width="440" height="116" rx="10" class="d-box-accent" />
+      <text x="260" y="175" text-anchor="middle" class="d-label">Transformer Block × n_layer</text>
+
+      <rect x="58" y="185" width="180" height="42" rx="7" class="d-box" />
+      <text x="148" y="203" text-anchor="middle" class="d-label">Multi-head attention</text>
+      <text x="148" y="218" text-anchor="middle" class="d-sub">4 heads × 32 dim</text>
+
+      <rect x="282" y="185" width="180" height="42" rx="7" class="d-box" />
+      <text x="372" y="203" text-anchor="middle" class="d-label">Feed-forward</text>
+      <text x="372" y="218" text-anchor="middle" class="d-sub">128 → 512 → 128</text>
+
+      <text x="260" y="248" text-anchor="middle" class="d-sub">+ 2 × LayerNorm · causal mask · residual add</text>
+      <text x="260" y="262" text-anchor="middle" class="d-sub">197,888 params per block</text>
+
+      <line x1="260" y1="270" x2="260" y2="294" class="d-edge-accent" marker-end="url(#gpt-arrow)" />
+
+      <rect x="40" y="296" width="440" height="46" rx="9" class="d-box-signal" />
+      <text x="260" y="316" text-anchor="middle" class="d-label">lm_head — 128 × 228</text>
+      <text x="260" y="331" text-anchor="middle" class="d-sub">logits over 228 characters</text>
+    </svg>
+  </Diagram>
+
+  ### The shape that never changes
+
+  Every layer takes `[B, T, C]` and returns `[B, T, C]`. That is not an accident — the
+  residual connection `x = x + f(x)` forces both sides to be the same size, and it is
+  exactly that constraint that makes depth a free dial: any block plugs in after any
+  other block.
+
+  Multi-head attention **divides** the width rather than multiplying it. With `C=128`
+  and four heads, each head works in 32 dimensions, so four independent views of the
+  sequence cost the same as one wide one. `C % n_head == 0` is a hard requirement —
+  `Block(128, 5)` silently discards three dimensions instead of raising.
+
+  Writing out the parameter budget by hand — 29,184 for tokens, 32,768 for positions,
+  197,888 per block, then the head — is the cheapest debugging tool in the project. If
+  `sum(p.numel())` does not match the arithmetic, something is wired wrong.
+</MediaSplit>
+
+## What the measurements said
+
+Two knobs, both of which "obviously" help, measured against wall-clock:
+
+| Change | Val loss | Time | Parameters |
+| --- | --- | --- | --- |
+| Context `T` = 64 | 1.421 | 257 s | 883,172 |
+| Context `T` = 128 | **1.389** | 558 s | 883,172 |
+
+Doubling the context cost **2.2× the training time** and bought 0.032 of loss — and not
+one extra parameter, because the attention matrix is `[B, n_head, T, T]` and grows with
+`T²` while the weights do not. That single table is the whole motivation for
+flash-attention, sliding windows and linear attention, and it is more convincing having
+watched the clock myself.
+
+Going from 2 to 4 layers bought 0.041 of loss for 81% more parameters and 97% more time
+— a better deal than the context increase, which is the sort of thing you only find out
+by trying both.
+
+## The bug worth keeping in the writeup
+
+`max_len` was 256, but training ran at `T=128`. Generation, meanwhile, was allowed to run
+out to 256 characters.
+
+Rows 128–255 of the positional embedding table had therefore never received a single
+gradient. They were still random initialisation. Generated text was fine for exactly 128
+characters and then collapsed into noise — which looks like a sampling bug, or a
+temperature problem, or a corpus problem, and is none of those.
+
+It is a good bug because the failure is loud but the cause is silent: nothing in the
+code is wrong, the table is simply larger than the training ever reached. Generate at the
+context length you trained at.
+
+## INT8, one rung at a time
+
+The quantization notebook works up in eight steps, from affine `FP32 → INT8 → FP32`
+round-tripping, through the arithmetic of scale and zero-point, to the parts that
+actually bite in production:
+
+- **Outliers.** A single extreme activation stretches the scale factor and crushes every
+  ordinary value into a handful of levels. This is the entire reason methods like AWQ
+  exist, and it is much clearer after watching one outlier destroy a tensor.
+- **Clipping before quantizing**, and what accuracy that trades away.
+- **Calibration** on data the range was not fitted to — the honest test, since a scale
+  tuned on the calibration batch will always flatter itself.
+- **Applying it to the GPT built earlier**, rather than to a toy tensor.
+- **Memory on disk versus memory in RAM**, which are not the same number and disappoint
+  people who expected a 4× saving everywhere.
+
+## What is in the repository
+
+Five notebooks — tokenizer and positional encoding, attention, the GPT, a BPE-level
+variant, and the INT8 ladder — plus a written parameter reference (`THAM_SO_GPT.md`) that
+explains every hyperparameter with the measured effect of changing it, and three
+standalone HTML visualisers for stepping through the data flow.
+
+It is a study project and it says so. The value is that the next time a model loses
+accuracy on a Hailo or a TensorRT conversion, I know which layer to suspect.

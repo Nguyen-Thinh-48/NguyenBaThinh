@@ -1,0 +1,269 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { url } from '../lib/url';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  /** Give the first card on a page more visual weight. */
+  featured?: boolean;
+}
+
+const { project, featured = false } = Astro.props;
+const { data } = project;
+const href = url(`/projects/${project.id}`);
+---
+
+<article class:list={['project-card', { featured }]}>
+  <a class="hit" href={href} aria-label={`Read the ${data.title} case study`}></a>
+
+  <div class="media">
+    {
+      data.video ? (
+        <video
+          src={url(data.video)}
+          poster={data.poster ? url(data.poster) : undefined}
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          tabindex="-1"
+          aria-hidden="true"
+        />
+      ) : data.image ? (
+        <img src={url(data.image)} alt="" loading="lazy" decoding="async" />
+      ) : (
+        <div class="media-fallback grid-bg" aria-hidden="true">
+          <span class="mono">{data.tags[0] ?? 'Project'}</span>
+        </div>
+      )
+    }
+    <span class="media-badge mono">{data.period}</span>
+  </div>
+
+  <div class="body">
+    <p class="org mono">{data.org} · {data.role}</p>
+    <h3 class="title">{data.title}</h3>
+    <p class="tagline">{data.tagline}</p>
+
+    {
+      data.highlights.length > 0 && (
+        <ul class="metrics">
+          {data.highlights.slice(0, 3).map((h) => (
+            <li>
+              <span class="metric-value">
+                {h.value}
+                {h.unit && <span class="metric-unit">{h.unit}</span>}
+              </span>
+              <span class="metric-label">{h.label}</span>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <ul class="chip-list tags">
+      {data.tags.map((tag) => <li class="chip">{tag}</li>)}
+    </ul>
+
+    <span class="cta">
+      Read case study
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
+      </svg>
+    </span>
+  </div>
+</article>
+
+<style>
+  .project-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .project-card:hover,
+  .project-card:focus-within {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-strong);
+  }
+
+  /* Full-card click target sitting under the content. */
+  .hit {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #05070b;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .media video,
+  .media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .project-card:hover .media video,
+  .project-card:hover .media img {
+    transform: scale(1.03);
+  }
+
+  .media-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: var(--surface-2);
+    color: var(--text-faint);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .media-badge {
+    position: absolute;
+    left: 0.7rem;
+    bottom: 0.7rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgb(5 7 11 / 0.72);
+    backdrop-filter: blur(6px);
+    color: #e8edf5;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.25rem 1.35rem 1.4rem;
+    flex: 1;
+  }
+
+  .org {
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .title {
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+
+  .featured .title {
+    font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.6rem);
+  }
+
+  .tagline {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.5rem;
+    list-style: none;
+    padding: 0.85rem 0 0;
+    margin: 0.25rem 0 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .metrics li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    min-width: 0;
+  }
+
+  .metric-value {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .metric-unit {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--signal);
+    margin-left: 0.12em;
+  }
+
+  .metric-label {
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: var(--text-faint);
+    max-width: 17ch;
+  }
+
+  .tags {
+    margin-top: 0.2rem;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 0.9rem;
+    color: var(--accent);
+    font-size: 0.87rem;
+    font-weight: 600;
+  }
+
+  .cta svg {
+    width: 1em;
+    height: 1em;
+    transition: transform 0.18s ease;
+  }
+
+  .project-card:hover .cta svg {
+    transform: translateX(3px);
+  }
+</style>
+
+<script>
+  // Cards show a still frame until pointed at, then play the demo silently.
+  // Bundled once per page even though the component renders many times.
+  const cards = document.querySelectorAll<HTMLElement>('.project-card');
+
+  cards.forEach((card) => {
+    const video = card.querySelector('video');
+    if (!video) return;
+
+    const play = () => {
+      // Autoplay can reject (low power mode, reduced data) — nothing to do.
+      video.play().catch(() => {});
+    };
+    const stop = () => {
+      video.pause();
+      video.currentTime = 0;
+    };
+
+    card.addEventListener('pointerenter', play);
+    card.addEventListener('pointerleave', stop);
+    card.addEventListener('focusin', play);
+    card.addEventListener('focusout', stop);
+  });
+</script>

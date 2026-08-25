@@ -1,0 +1,230 @@
+---
+import Base from '../layouts/Base.astro';
+import StackList from '../components/StackList.astro';
+import { site } from '../site.config';
+import { url } from '../lib/url';
+---
+
+<Base
+  title="About"
+  description="Nguyen Ba Thinh — AIoT and Edge AI engineer in Ho Chi Minh City. Education, research and background."
+>
+  <section class="section-tight header">
+    <div class="container">
+      <p class="eyebrow">About</p>
+      <h1>Hi, I&rsquo;m Thinh.</h1>
+      <div class="intro">
+        <p class="lede">
+          I am an AIoT engineer in Ho Chi Minh City, finishing an engineering degree
+          in IoT and Applied Artificial Intelligence. My work sits where a model has
+          to stop being a notebook experiment and start running on hardware that has a
+          power budget.
+        </p>
+        <p class="lede">
+          That has meant pruning a face recognition network until it fit a Hailo-8L and
+          got <em>more</em> accurate, keeping a drone controllable over a 4G link that
+          drops packets, and writing a transformer and its INT8 quantizer from scratch
+          because I wanted to know exactly what the accelerator was doing to my weights.
+        </p>
+        <p class="lede">
+          I like problems with a number attached — latency, FPS, accuracy, packet loss —
+          because you can tell whether you actually solved them.
+        </p>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-primary" href={url(site.cv)} target="_blank" rel="noopener">
+          Download CV (PDF)
+        </a>
+        <a class="btn btn-ghost" href={site.links.github} target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-ghost" href={`mailto:${site.email}`}>{site.email}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <div class="facts">
+        <div class="fact card">
+          <h2 class="eyebrow">Education</h2>
+          <h3>{site.education.degree}</h3>
+          <p class="fact-org">{site.education.school}</p>
+          <p class="fact-meta mono">{site.education.period}</p>
+          <p class="fact-note">{site.education.note}</p>
+        </div>
+
+        <div class="fact card">
+          <h2 class="eyebrow">Research</h2>
+          <h3>{site.research.title}</h3>
+          <p class="fact-org">Advisor: {site.research.advisor}</p>
+          <p class="fact-note">{site.research.note}</p>
+          <p class="fact-note">
+            The applied result of this thesis is the{' '}
+            <a href={url('/projects/edge-ai-face-recognition')}>edge face recognition system</a>.
+          </p>
+        </div>
+
+        <div class="fact card">
+          <h2 class="eyebrow">Certificate</h2>
+          <h3>{site.certificate.title}</h3>
+          <p class="fact-org">{site.certificate.issuer}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section experience-section">
+    <div class="container">
+      <h2 class="eyebrow">Experience</h2>
+      <ol class="timeline">
+        {
+          site.experience.map((job) => (
+            <li class="job">
+              <div class="job-when mono">{job.period}</div>
+              <div class="job-what">
+                <h3>{job.company}</h3>
+                <p class="job-role mono">{job.role}</p>
+                <p class="job-summary">{job.summary}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <StackList groups={site.expertise} title="Tools I reach for" />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .header {
+    padding-top: clamp(2.25rem, 5vw, 3.5rem);
+  }
+
+  .header .container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .intro em {
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+    gap: 1.15rem;
+  }
+
+  .fact {
+    padding: 1.35rem 1.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .fact h3 {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin-top: 0.15rem;
+  }
+
+  .fact-org {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .fact-meta {
+    font-size: 0.73rem;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+  }
+
+  .fact-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-top: auto;
+    padding-top: 0.35rem;
+  }
+
+  .experience-section {
+    background: var(--bg-alt);
+    border-block: 1px solid var(--border);
+  }
+
+  .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+  }
+
+  .job {
+    display: grid;
+    grid-template-columns: 165px minmax(0, 1fr);
+    gap: 1.5rem;
+    padding-block: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .job:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .job-when {
+    font-size: 0.73rem;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    padding-top: 0.25rem;
+  }
+
+  .job-what {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .job-what h3 {
+    font-size: 1.1rem;
+  }
+
+  .job-role {
+    font-size: 0.73rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--signal);
+  }
+
+  .job-summary {
+    color: var(--text-muted);
+    max-width: 62ch;
+    margin-top: 0.2rem;
+  }
+
+  @media (max-width: 700px) {
+    .job {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+  }
+</style>

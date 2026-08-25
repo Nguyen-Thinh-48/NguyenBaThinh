@@ -1,0 +1,77 @@
+---
+interface Props {
+  source: {
+    state: 'public' | 'private' | 'none';
+    url?: string;
+    note?: string;
+  };
+}
+
+const { source } = Astro.props;
+
+const label =
+  source.state === 'public'
+    ? 'View source on GitHub'
+    : source.state === 'private'
+      ? 'Source is private'
+      : 'No public repository';
+---
+
+{
+  source.state === 'public' && source.url ? (
+    <a class="btn btn-ghost" href={source.url} target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 1.8a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7 0-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.8z" />
+      </svg>
+      {label}
+    </a>
+  ) : (
+    <span class="source-note" title={source.note}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="4.4" y="10.4" width="15.2" height="9.4" rx="2.2" />
+        <path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8" />
+      </svg>
+      <span>
+        <strong>{label}</strong>
+        {source.note && <span class="note">{source.note}</span>}
+      </span>
+    </span>
+  )
+}
+
+<style>
+  .source-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1rem;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    max-width: 34rem;
+  }
+
+  .source-note svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    color: var(--text-faint);
+  }
+
+  .source-note strong {
+    display: block;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .note {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-wrap: pretty;
+  }
+</style>

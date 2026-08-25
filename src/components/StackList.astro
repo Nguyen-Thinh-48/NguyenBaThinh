@@ -1,0 +1,63 @@
+---
+interface Group {
+  group: string;
+  items: readonly string[];
+}
+
+interface Props {
+  groups: readonly Group[];
+  title?: string;
+}
+
+const { groups, title } = Astro.props;
+---
+
+{
+  groups.length > 0 && (
+    <section class="stack-block">
+      {title && <h2 class="eyebrow">{title}</h2>}
+      <div class="groups">
+        {groups.map((g) => (
+          <div class="group">
+            <h3 class="group-name">{g.group}</h3>
+            <ul class="chip-list">
+              {g.items.map((item) => (
+                <li class="chip">{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .stack-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+    gap: 1.5rem 2rem;
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .group-name {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+</style>

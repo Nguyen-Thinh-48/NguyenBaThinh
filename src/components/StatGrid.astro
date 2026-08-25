@@ -1,0 +1,90 @@
+---
+interface Stat {
+  value: string;
+  unit?: string;
+  label: string;
+}
+
+interface Props {
+  items: readonly Stat[];
+  /** Compact variant for the top of a project page. */
+  dense?: boolean;
+}
+
+const { items, dense = false } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <dl class:list={['stat-grid', { dense }]}>
+      {items.map((stat) => (
+        <div class="stat">
+          <dt class="stat-value">
+            <span class="num">{stat.value}</span>
+            {stat.unit && <span class="unit">{stat.unit}</span>}
+          </dt>
+          <dd class="stat-label">{stat.label}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+<style>
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    margin: 0;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .stat {
+    background: var(--surface);
+    padding: 1.25rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .dense .stat {
+    padding: 1rem 1.15rem;
+  }
+
+  .stat-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.18em;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .num {
+    font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.4rem);
+    line-height: 1;
+  }
+
+  .dense .num {
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 1.95rem);
+  }
+
+  .unit {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--signal);
+  }
+
+  .stat-label {
+    margin: 0;
+    font-size: 0.83rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-wrap: pretty;
+  }
+</style>

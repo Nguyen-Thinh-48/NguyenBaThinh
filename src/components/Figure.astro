@@ -1,0 +1,55 @@
+---
+import { url } from '../lib/url';
+
+interface Props {
+  /** Site-root relative path, e.g. "/media/edge-ai-face-recognition/ui.png" */
+  src: string;
+  alt: string;
+  caption?: string;
+  /** Aspect box to stop layout shift while the image loads. */
+  ratio?: string;
+  /** Screenshots read better contained; photos better cropped. */
+  fit?: 'contain' | 'cover';
+}
+
+const { src, alt, caption, ratio = '16 / 9', fit = 'cover' } = Astro.props;
+---
+
+<figure class="figure">
+  <div class="frame" style={`--ratio: ${ratio}; --fit: ${fit}`}>
+    <img src={url(src)} alt={alt} loading="lazy" decoding="async" />
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .frame {
+    aspect-ratio: var(--ratio);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface-2);
+    box-shadow: var(--shadow-md);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: var(--fit);
+  }
+
+  figcaption {
+    font-family: var(--font-mono);
+    font-size: 0.735rem;
+    line-height: 1.55;
+    color: var(--text-faint);
+    padding-left: 0.1rem;
+  }
+</style>

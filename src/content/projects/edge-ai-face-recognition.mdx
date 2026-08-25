@@ -1,0 +1,223 @@
+---
+title: Edge AI Face Recognition
+tagline: A stereo-camera recognition terminal running entirely on a Raspberry Pi 5 and a 5 W Hailo accelerator — no cloud inference.
+summary: >-
+  Face recognition on a Hailo-8L accelerator and Raspberry Pi 5, using SCRFD for
+  detection and a structurally pruned MobileFaceNet for embeddings, with dual-camera
+  feature fusion, motion-based anti-spoofing and OTA updates.
+org: HBQ Technology · IUH graduation thesis
+role: AI / Embedded Engineer
+period: May 2025 — Jan 2026
+order: 2
+featured: true
+tags:
+  - Edge AI
+  - Computer Vision
+  - Embedded
+  - Python
+source:
+  state: private
+  note: Developed with HBQ Technology and as a university thesis, so the repository is closed. The measurements below are from the thesis report.
+video: /media/edge-ai-face-recognition/demo.mp4
+mediaCaption: Live recognition on the terminal — detection, alignment and identity match running on-device.
+highlights:
+  - value: '25'
+    unit: FPS
+    label: Real-time inference on Raspberry Pi 5 + Hailo-8L
+  - value: '95.82'
+    unit: '%'
+    label: Accuracy after structured pruning, up from 89.42%
+  - value: '2.5'
+    unit: '×'
+    label: Faster face detection on the accelerator than ONNX on CPU
+  - value: '−20'
+    unit: '%'
+    label: Parameters removed from the embedding network
+stack:
+  - group: Languages
+    items: ['Python', 'QML', 'Shell', 'Jupyter', 'Go']
+  - group: Models
+    items: ['SCRFD-500m', 'MobileFaceNet / ArcFace', 'PyTorch', 'ONNX']
+  - group: Edge acceleration
+    items: ['Hailo-8L', 'HailoRT', 'hailo_platform SDK', 'HEF compilation']
+  - group: Vision & capture
+    items: ['OpenCV', 'Picamera2', 'V4L2', 'NumPy', 'Matplotlib']
+  - group: Interface & backend
+    items: ['PyQt5', 'Go REST API', 'CSV / JSON storage', 'OTA updater']
+  - group: Hardware
+    items: ['Raspberry Pi 5', 'Hailo-8L M.2', 'Dual OV5647 camera', '7" touch display']
+---
+
+import MediaSplit from '../../components/MediaSplit.astro';
+import Video from '../../components/Video.astro';
+import Diagram from '../../components/Diagram.astro';
+
+## The problem
+
+Access control systems that send faces to a server have two problems: they stop
+working when the network does, and they move biometric data off-site. The brief was a
+terminal that recognises a face, decides locally, and only talks to a server to record
+that it happened.
+
+The hardware budget was a Raspberry Pi 5 with a Hailo-8L M.2 accelerator — roughly
+5&nbsp;W for the inference. The target was real-time: a face recognised while the
+person is still walking up to the door, not after they have stopped and waited.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="Recognition pipeline. Both camera branches run the same models; the embeddings are fused before matching.">
+    <svg viewBox="0 0 520 382" role="img" aria-label="Pipeline: two OV5647 cameras feed SCRFD-500m face detection and landmarks, then a pruned MobileFaceNet produces 512-dimension embeddings, which are late-fused and matched by cosine similarity, with results posted to a Go API.">
+      <defs>
+        <marker id="fr-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="12" width="190" height="46" rx="9" class="d-box" />
+      <text x="135" y="32" text-anchor="middle" class="d-label">Camera L</text>
+      <text x="135" y="47" text-anchor="middle" class="d-sub">OV5647 · CSI</text>
+
+      <rect x="290" y="12" width="190" height="46" rx="9" class="d-box" />
+      <text x="385" y="32" text-anchor="middle" class="d-label">Camera R</text>
+      <text x="385" y="47" text-anchor="middle" class="d-sub">OV5647 · CSI</text>
+
+      <line x1="135" y1="58" x2="135" y2="88" class="d-edge" marker-end="url(#fr-arrow)" />
+      <line x1="385" y1="58" x2="385" y2="88" class="d-edge" marker-end="url(#fr-arrow)" />
+
+      <rect x="40" y="90" width="440" height="52" rx="9" class="d-box-accent" />
+      <text x="260" y="112" text-anchor="middle" class="d-label">SCRFD-500m — detection + 5 landmarks</text>
+      <text x="260" y="128" text-anchor="middle" class="d-sub">640×640 HEF · 31.4 ms · eye-line alignment</text>
+
+      <line x1="260" y1="142" x2="260" y2="166" class="d-edge-accent" marker-end="url(#fr-arrow)" />
+      <text x="272" y="158" class="d-edge-label">aligned crops</text>
+
+      <rect x="40" y="168" width="440" height="52" rx="9" class="d-box-accent" />
+      <text x="260" y="190" text-anchor="middle" class="d-label">MobileFaceNet — pruned</text>
+      <text x="260" y="206" text-anchor="middle" class="d-sub">1.417M params · 8.8 ms · 512-d embedding ×2</text>
+
+      <line x1="260" y1="220" x2="260" y2="244" class="d-edge-accent" marker-end="url(#fr-arrow)" />
+      <text x="272" y="236" class="d-edge-label">late fusion</text>
+
+      <rect x="40" y="246" width="440" height="52" rx="9" class="d-box-signal" />
+      <text x="260" y="268" text-anchor="middle" class="d-label">Match + anti-spoofing gate</text>
+      <text x="260" y="284" text-anchor="middle" class="d-sub">cosine ≥ 0.7 · 30-frame landmark kinematics</text>
+
+      <line x1="260" y1="298" x2="260" y2="322" class="d-edge" marker-end="url(#fr-arrow)" />
+
+      <rect x="40" y="324" width="440" height="46" rx="9" class="d-box" />
+      <text x="260" y="344" text-anchor="middle" class="d-label">Go REST API</text>
+      <text x="260" y="359" text-anchor="middle" class="d-sub">users · check-in · attendance history</text>
+    </svg>
+  </Diagram>
+
+  ### Everything happens on the box
+
+  Detection uses **SCRFD-500m**, which returns a bounding box and five landmarks in one
+  pass. The landmarks matter as much as the box: the two eye points give the rotation
+  needed to straighten the face before embedding, and straightening it is worth more
+  accuracy than most model changes.
+
+  Embeddings come from **MobileFaceNet** trained on ArcFace data, producing a
+  512-dimension vector per face. Matching is plain cosine similarity against the stored
+  vectors, thresholded at 0.7.
+
+  Both models are compiled to Hailo's **HEF** format and executed through HailoRT. The
+  Pi's CPU is left to do capture, alignment and the Qt interface.
+</MediaSplit>
+
+## Pruning that made the model more accurate
+
+The interesting result was not the speed-up — it was that removing a fifth of the
+network made it better.
+
+The idea: inside a trained convolutional layer, many filters end up nearly parallel to
+each other. They cost compute and contribute almost nothing new. I measured pairwise
+**cosine similarity between filters** and removed those above a 0.3 similarity
+threshold as redundant.
+
+| MobileFaceNet | Parameters | Accuracy |
+| --- | --- | --- |
+| Original | 1.778 M | 89.42% |
+| Structurally pruned (cosine, threshold 0.3) | **1.417 M** | **95.82%** |
+
+A 20% smaller network scoring 6.4 points higher is not magic — it is the redundant
+filters having acted as noise on the embedding. Cutting them tightened the clusters
+that cosine similarity has to separate.
+
+The honest caveat: in the current implementation the pruned filters are zeroed rather
+than physically removed from the graph, so the parameter count is the logical one. Doing
+the structural removal properly would recover the memory too, and it is the first item
+on the list if I return to this.
+
+## What the accelerator actually bought
+
+Both models were benchmarked as ONNX on the Pi's CPU and as HEF on the Hailo-8L:
+
+| Model | Format | Size | Time per image |
+| --- | --- | --- | --- |
+| SCRFD-500m | ONNX | 2.5 MB | 79.52 ms |
+| SCRFD-500m | **HEF (Hailo)** | 5.5 MB | **31.43 ms** |
+| MobileFaceNet | ONNX | 8.2 MB | 22.39 ms |
+| MobileFaceNet | **HEF (Hailo)** | 6.4 MB | **8.76 ms** |
+
+Detection got 2.5× faster and embedding 2.6× faster. Note the HEF file for SCRFD is
+*larger* than the ONNX — the compiled format trades disk for a layout the accelerator
+can stream, which is the trade you want on a device with an SD card and a power budget.
+
+Together with the pruning, that is what put the running system at roughly **25 FPS**.
+
+<MediaSplit flip>
+  <Video
+    slot="media"
+    src="/media/edge-ai-face-recognition/demo.mp4"
+    caption="The terminal in use: registration, live matching and the attendance record it writes."
+  />
+
+  ### Two cameras, one identity
+
+  The second camera is the part that came from the research side of this project.
+  Rather than using stereo purely for depth, both views run the full pipeline and their
+  512-d embeddings are combined by **late fusion** before matching.
+
+  Two views of the same face disagree in useful ways — a partial occlusion, a harsh
+  side light or an unflattering angle rarely hits both sensors identically. Fusing
+  after the embedding rather than before means each branch stays a clean face vector,
+  and the fusion just picks up the consensus.
+
+  Registration uses the same idea over time instead of space: several frames are
+  captured, blurry and noisy ones are filtered out, and the stored vector is the average
+  of what survives.
+</MediaSplit>
+
+## Anti-spoofing without a second model
+
+A printed photo passes face recognition perfectly. The usual fix is another neural
+network, which there was no compute budget for.
+
+Instead the system watches the landmarks it is already computing. Over a window of at
+least 30 frames it tracks their **velocity, variance and geometric deformation**. A
+real face is never still — micro-movements, breathing, small head rotations — and it
+deforms non-rigidly. A photo, a phone screen or a replayed video moves as a flat plane
+or does not move at all.
+
+It costs almost nothing on top of detection, because the landmarks are free at that
+point, and it catches printed photos, screen replays and simple deepfake playback.
+
+## Making it a product, not a demo
+
+The parts that are unglamorous but decide whether something ships:
+
+- **OTA updates** — the terminal compares its commit hash against GitHub, backs itself up
+  and updates in place. Nobody carries an SD card to an installed door.
+- **A Go REST API** for users, check-ins and attendance history, with a small web admin
+  interface, so the terminal is not also the database.
+- **A PyQt5 touch interface** for registration, the user list, Wi-Fi setup and admin login.
+- **Thermal monitoring**, because a Pi 5 with an M.2 accelerator in a sealed enclosure will
+  throttle, and you want to know before the FPS quietly halves.
+
+## What I worked on
+
+Joint thesis work with Le Chi Thien, supervised by Dr. Cao Van Kien at Industrial
+University of Ho Chi Minh City, developed alongside HBQ Technology. My focus was the
+inference side: model conversion and HEF compilation, the structured pruning
+experiments, the dual-camera fusion, the anti-spoofing logic and the Hailo inference
+wrappers.

@@ -1,0 +1,195 @@
+---
+title: 4G/5G Drone Streaming & Control
+tagline: A drone you can fly and watch from anywhere with a mobile signal — no radio link, no line of sight.
+summary: >-
+  A connected drone platform built on a custom PX4 flight controller, a Compute
+  Module 5 companion computer and a 4G modem, streaming dual-camera video and
+  MAVLink telemetry to a cloud router and a customised QGroundControl.
+org: HBQ Technology
+role: R&D Engineer
+period: Apr 2025 — Apr 2026
+order: 1
+featured: true
+tags:
+  - Embedded
+  - Go
+  - Streaming
+  - Computer Vision
+source:
+  state: private
+  note: Built inside HBQ Technology, so the repository stays closed. Everything below describes the design and the measurements.
+video: /media/connected-drone/demo.mp4
+mediaCaption: Live flight — dual-camera video and telemetry arriving over a 4G link.
+highlights:
+  - value: '<300'
+    unit: ms
+    label: Video and telemetry latency end to end over 4G
+  - value: '~5'
+    unit: '%'
+    label: Packet loss reduction on unstable mobile links
+  - value: '~80'
+    unit: '%'
+    label: Landing zone detection accuracy in field conditions
+stack:
+  - group: Languages
+    items: ['Go', 'Python', 'C++']
+  - group: Vision & streaming
+    items: ['OpenCV', 'GStreamer', 'RTSP / MediaMTX', 'H.264', 'IMX219 dual camera']
+  - group: Backend & protocol
+    items: ['Go REST', 'WebSocket', 'gomavlib', 'MAVLink 2.0', 'TCP/UDP']
+  - group: Flight stack
+    items: ['PX4 Autopilot', 'QGroundControl', 'Qt 6', 'TensorFlow Lite Micro']
+  - group: Hardware
+    items: ['Compute Module 5 (custom carrier)', 'SIM7600G-H-M2', 'STM32H7 FMU-v6x']
+  - group: Networking & tooling
+    items: ['WireGuard VPN', 'Linux', 'Makefile', 'Git', 'GitHub Copilot']
+---
+
+import MediaSplit from '../../components/MediaSplit.astro';
+import Video from '../../components/Video.astro';
+import Diagram from '../../components/Diagram.astro';
+
+## The problem
+
+A conventional drone is tethered to its radio: a few kilometres of range, line of
+sight, and a ground station that has to be physically nearby. We wanted the
+opposite — a drone that registers itself with a server the moment it powers on, and
+an operator who can be in a different city.
+
+That turns a radio problem into a networking problem. Mobile networks jitter, drop
+packets and change IP addresses mid-flight, and none of that is acceptable for a
+control link. The interesting work was making a hostile transport behave well enough
+to fly on.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="Data path from the flight controller to the operator. Control and video travel over the same 4G link but are routed separately.">
+    <svg viewBox="0 0 520 344" role="img" aria-label="Architecture: PX4 flight controller connects by UART to a Compute Module 5 running a Go MAVLink forwarder and a GStreamer camera pipeline; both cross a 4G link to a cloud MAVLink router and MediaMTX server, which serve a customised QGroundControl.">
+      <defs>
+        <marker id="cd-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="30" y="12" width="460" height="54" rx="9" class="d-box-accent" />
+      <text x="260" y="35" text-anchor="middle" class="d-label">HBQ Flight Controller — custom PX4</text>
+      <text x="260" y="51" text-anchor="middle" class="d-sub">STM32H7 · mc_nn_control (TFLite Micro)</text>
+
+      <line x1="260" y1="66" x2="260" y2="92" class="d-edge" marker-end="url(#cd-arrow)" />
+      <text x="272" y="83" class="d-edge-label">UART · MAVLink 2.0</text>
+
+      <rect x="30" y="94" width="220" height="58" rx="9" class="d-box" />
+      <text x="140" y="118" text-anchor="middle" class="d-label">MAVLink forwarder</text>
+      <text x="140" y="134" text-anchor="middle" class="d-sub">Go · gomavlib · HMAC auth</text>
+
+      <rect x="270" y="94" width="220" height="58" rx="9" class="d-box" />
+      <text x="380" y="118" text-anchor="middle" class="d-label">Dual camera capture</text>
+      <text x="380" y="134" text-anchor="middle" class="d-sub">GStreamer · H.264 · PiP</text>
+
+      <text x="260" y="105" text-anchor="middle" class="d-sub">Compute</text>
+      <text x="260" y="117" text-anchor="middle" class="d-sub">Module 5</text>
+
+      <line x1="140" y1="152" x2="140" y2="184" class="d-edge-accent" marker-end="url(#cd-arrow)" />
+      <line x1="380" y1="152" x2="380" y2="184" class="d-edge-accent" marker-end="url(#cd-arrow)" />
+      <text x="260" y="163" text-anchor="middle" class="d-edge-label">SIM7600G-H · 4G/LTE</text>
+      <text x="260" y="175" text-anchor="middle" class="d-edge-label">WireGuard VPN</text>
+
+      <rect x="30" y="186" width="220" height="58" rx="9" class="d-box" />
+      <text x="140" y="210" text-anchor="middle" class="d-label">MAVLink router</text>
+      <text x="140" y="226" text-anchor="middle" class="d-sub">Go REST · multi-endpoint</text>
+
+      <rect x="270" y="186" width="220" height="58" rx="9" class="d-box" />
+      <text x="380" y="210" text-anchor="middle" class="d-label">MediaMTX</text>
+      <text x="380" y="226" text-anchor="middle" class="d-sub">RTSP · WebRTC · HLS</text>
+
+      <line x1="140" y1="244" x2="140" y2="276" class="d-edge" marker-end="url(#cd-arrow)" />
+      <line x1="380" y1="244" x2="380" y2="276" class="d-edge" marker-end="url(#cd-arrow)" />
+
+      <rect x="30" y="278" width="460" height="54" rx="9" class="d-box-signal" />
+      <text x="260" y="301" text-anchor="middle" class="d-label">QGroundControl — customised (Qt 6)</text>
+      <text x="260" y="317" text-anchor="middle" class="d-sub">telemetry · mission planning · dual-camera view</text>
+    </svg>
+  </Diagram>
+
+  ### One link, two very different payloads
+
+  Control traffic is tiny and cannot be late. Video is large and can tolerate a
+  dropped frame. Pushing both down the same modem meant separating them early:
+  MAVLink goes through a Go forwarder that speaks `gomavlib`, video goes into a
+  GStreamer pipeline that never touches the control path.
+
+  On the ground side a Go router fans MAVLink out to multiple endpoints — a
+  QGroundControl instance, a web dashboard, a logging consumer — each authenticated
+  by System ID, so adding an observer never costs the pilot anything.
+
+  MediaMTX handles video redistribution, which meant one RTSP ingest could be served
+  back as WebRTC for the browser and HLS for anything that could not do better.
+</MediaSplit>
+
+<MediaSplit flip>
+  <Video
+    slot="media"
+    src="/media/connected-drone/demo.mp4"
+    caption="Operator view: picture-in-picture from two IMX219 cameras with live telemetry overlay."
+  />
+
+  ### Getting under 300 ms
+
+  Latency is where a connected drone either works or does not. Anything past roughly
+  half a second and an operator starts over-correcting.
+
+  The budget came apart into capture, encode, transport and decode. The wins were:
+
+  - **Encode on the Pi's hardware H.264 path**, not in software — the single largest saving.
+  - **Composite the two IMX219 cameras into one picture-in-picture stream** in GStreamer,
+    so we paid for one encode and one connection instead of two.
+  - **Tune MediaMTX for low latency over reliability** — small buffers, WebRTC to the
+    browser instead of HLS, and no transcoding anywhere in the path.
+
+  Measured end to end — lens to operator screen — the result held **under 300 ms** on a
+  normal commercial 4G connection.
+</MediaSplit>
+
+## Surviving a bad network
+
+Mobile links do not fail cleanly; they degrade. The forwarder had to keep a session
+alive through IP changes, brief blackouts and reordered packets.
+
+- A **WireGuard tunnel** gives the drone a stable address even when the carrier
+  reassigns its public IP mid-flight, so the router never sees the session move.
+- **HMAC-based registration** against the fleet server ties each airframe to a UUID.
+  A drone authenticates once at boot; the router refuses MAVLink from anything it
+  cannot attribute.
+- Choosing **TCP for control and UDP for video** matched each payload to what it
+  actually needs. Combined with retry and reconnect logic in the forwarder, this cut
+  effective packet loss on unstable links by around **5%**.
+
+Auto-detecting the Pixhawk's System ID at startup removed a whole category of
+misconfiguration — the drone tells the server who it is rather than being told.
+
+## Finding the landing zone
+
+The onboard vision task was landing zone detection: recognise the pad in the downward
+camera and report its offset so the flight stack can correct.
+
+It runs as template matching in OpenCV on the companion computer rather than a neural
+network, which was the right call for the constraint — the pad is a known, high-contrast
+marker, and template matching left the CPU budget free for encoding. In real outdoor
+conditions, with changing light and altitude, it identified the zone correctly about
+**80%** of the time.
+
+## The ground station
+
+Operators were switching between QGroundControl for flight and a separate browser tab
+for video. I customised a QGroundControl build (Qt 6) to pull the RTSP stream, the
+MAVLink authentication and the landing-pattern overlay into the same window. Removing
+that context switch is where the roughly **40% improvement in operational efficiency**
+came from — it is a workflow number, not a systems one, but it was the change operators
+noticed most.
+
+## What I worked on
+
+This was a company R&D project with several people on it. My part was the connectivity
+and streaming layer: the Go MAVLink forwarder and router, the GStreamer/MediaMTX video
+path, the 4G module bring-up and WireGuard tunnelling, the landing zone detection, and
+the QGroundControl customisation. The PX4 board support and the neural-network control
+module were the wider team's work.

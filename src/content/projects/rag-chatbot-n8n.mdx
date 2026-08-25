@@ -1,0 +1,174 @@
+---
+title: Self-Hosted RAG Sales Chatbot
+tagline: A Messenger and Instagram assistant that answers only from the company's own documents — and hands the conversation to a human the moment one is needed.
+summary: >-
+  An end-to-end automated chatbot on self-hosted n8n, answering Facebook Messenger
+  messages and Page comments around the clock from a PGVector knowledge base, with
+  a LangChain + Gemini sales agent, automatic document sync and clean human handover.
+org: BEE HOOME TECHNOLOGY JSC
+role: Fullstack Engineer
+period: May 2025 — Present
+order: 5
+featured: false
+tags:
+  - LLM
+  - Backend
+  - Docker
+source:
+  state: private
+  note: Production automation for a client brand. The workflows and knowledge base are not public.
+image: /media/rag-chatbot-n8n/vector-space.svg
+mediaCaption: Retrieval as it actually works — a query embedding and its nearest document chunks in the vector store.
+highlights:
+  - value: '24/7'
+    label: Unattended first response on Messenger, Instagram and Page comments
+  - value: '~800'
+    unit: tok
+    label: Chunk size the knowledge base is split into before embedding
+  - value: '2'
+    label: Containers running the entire stack on one VPS
+stack:
+  - group: Orchestration
+    items: ['n8n (self-hosted)', 'Webhooks', 'n8n Data Tables', 'JavaScript', 'JSON']
+  - group: AI
+    items: ['Google Gemini', 'LangChain AI Agent', 'Gemini Embeddings', 'RAG']
+  - group: Data
+    items: ['PostgreSQL', 'PGVector', 'Postgres chat memory']
+  - group: Integrations
+    items: ['Facebook Graph API v19.0', 'Google Drive API']
+  - group: Infrastructure
+    items: ['Docker', 'Docker Compose', 'Linux VPS']
+---
+
+import MediaSplit from '../../components/MediaSplit.astro';
+import Diagram from '../../components/Diagram.astro';
+
+## The problem
+
+A premium kitchen-cabinet brand was losing enquiries to response time. Customers ask on
+Messenger and in the comments under a Page post, often outside working hours, and a cold
+lead by morning is usually a lost one.
+
+A generic chatbot makes this worse rather than better. If it invents a product finish, a
+lead time or a price, the brand pays for that mistake. So the requirement was narrower
+than "add an LLM": answer from the company's own documents, or do not answer.
+
+<MediaSplit wide>
+  <Diagram slot="media" caption="The message path. Retrieval runs before generation, so the model is answering from documents rather than from memory.">
+    <svg viewBox="0 0 520 372" role="img" aria-label="Message flow: a Facebook or Instagram webhook enters n8n, passes an echo and duplicate filter and a per-user bot toggle, retrieves context from PGVector, is answered by a LangChain Gemini agent, and replies to the customer.">
+      <defs>
+        <marker id="rag-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="12" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="34" text-anchor="middle" class="d-label">Facebook / Instagram webhook</text>
+      <text x="260" y="49" text-anchor="middle" class="d-sub">Graph API v19.0 · messages + Page comments</text>
+
+      <line x1="260" y1="60" x2="260" y2="86" class="d-edge" marker-end="url(#rag-arrow)" />
+
+      <rect x="40" y="88" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="110" text-anchor="middle" class="d-label">n8n gate</text>
+      <text x="260" y="125" text-anchor="middle" class="d-sub">echo + duplicate filter · per-user bot ON/OFF</text>
+
+      <line x1="260" y1="136" x2="260" y2="162" class="d-edge-accent" marker-end="url(#rag-arrow)" />
+
+      <rect x="40" y="164" width="440" height="48" rx="9" class="d-box-accent" />
+      <text x="260" y="186" text-anchor="middle" class="d-label">Retrieval — PGVector</text>
+      <text x="260" y="201" text-anchor="middle" class="d-sub">top-k chunks from the company knowledge base</text>
+
+      <line x1="260" y1="212" x2="260" y2="238" class="d-edge-accent" marker-end="url(#rag-arrow)" />
+
+      <rect x="40" y="240" width="440" height="48" rx="9" class="d-box-accent" />
+      <text x="260" y="262" text-anchor="middle" class="d-label">LangChain agent — Gemini</text>
+      <text x="260" y="277" text-anchor="middle" class="d-sub">brand persona · strict answer rules · Postgres memory</text>
+
+      <line x1="260" y1="288" x2="260" y2="314" class="d-edge" marker-end="url(#rag-arrow)" />
+
+      <rect x="40" y="316" width="440" height="44" rx="9" class="d-box-signal" />
+      <text x="260" y="336" text-anchor="middle" class="d-label">Reply — or hand over to a person</text>
+      <text x="260" y="351" text-anchor="middle" class="d-sub">status tracked per customer in n8n Data Tables</text>
+    </svg>
+  </Diagram>
+
+  ### Grounded, or silent
+
+  Every incoming message is embedded and used to retrieve the closest chunks from a
+  **PostgreSQL + PGVector** store before the model sees it. The agent's instructions
+  scope it hard: answer from the retrieved context, stay in the brand's voice, and when
+  the knowledge base does not cover the question, say so and escalate rather than
+  improvise.
+
+  Multi-turn context comes from **Postgres chat memory**, so a customer who asks "and in
+  matte?" three messages later is still talking about the same cabinet door.
+
+  Two details that decide whether this survives contact with production: **echo and
+  duplicate filtering**, because the Page's own replies come back through the webhook and
+  will happily start an infinite conversation with itself, and **a per-user ON/OFF
+  toggle**, so a salesperson can take over a thread and the bot goes quiet for that
+  customer only.
+</MediaSplit>
+
+<MediaSplit flip>
+  <Diagram slot="media" caption="Knowledge base sync. Dropping a PDF in a Drive folder is the whole publishing workflow.">
+    <svg viewBox="0 0 520 224" role="img" aria-label="Knowledge base sync: a Google Drive trigger detects a new document, splits it into 800-token chunks, embeds them with Gemini and upserts them into PGVector.">
+      <defs>
+        <marker id="kb-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L9 5 L0 9 z" class="d-arrow" />
+        </marker>
+      </defs>
+
+      <rect x="40" y="12" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="34" text-anchor="middle" class="d-label">Google Drive folder</text>
+      <text x="260" y="49" text-anchor="middle" class="d-sub">new or updated product document</text>
+
+      <line x1="260" y1="60" x2="260" y2="86" class="d-edge" marker-end="url(#kb-arrow)" />
+      <text x="272" y="79" class="d-edge-label">Drive trigger</text>
+
+      <rect x="40" y="88" width="440" height="48" rx="9" class="d-box" />
+      <text x="260" y="110" text-anchor="middle" class="d-label">Split into ~800-token chunks</text>
+      <text x="260" y="125" text-anchor="middle" class="d-sub">overlapping · one topic per chunk</text>
+
+      <line x1="260" y1="136" x2="260" y2="162" class="d-edge-accent" marker-end="url(#kb-arrow)" />
+
+      <rect x="40" y="164" width="440" height="48" rx="9" class="d-box-accent" />
+      <text x="260" y="186" text-anchor="middle" class="d-label">Gemini embeddings → upsert</text>
+      <text x="260" y="201" text-anchor="middle" class="d-sub">PGVector · no manual step anywhere</text>
+    </svg>
+  </Diagram>
+
+  ### The knowledge base maintains itself
+
+  The failure mode of every RAG system is a stale index. If updating what the bot knows
+  requires an engineer, it stops happening, and the bot starts confidently quoting last
+  season's catalogue.
+
+  So the sync is a trigger, not a task. A **Google Drive watcher** picks up new and
+  changed files, splits them into roughly **800-token chunks**, embeds each one with
+  Gemini and upserts it into the vector store.
+
+  The person who owns the product information drops a file in a folder. That is the
+  entire publishing workflow, and it is why the knowledge base is still current.
+</MediaSplit>
+
+## Why self-hosted
+
+The whole stack — n8n and PostgreSQL with the PGVector extension — runs in **Docker
+Compose on a single VPS**. That was a deliberate choice over the managed equivalents.
+
+- **The customer conversations stay on infrastructure the company controls.** For a brand
+  handling enquiries and contact details, that is not a preference.
+- **Cost is a fixed server bill** rather than per-execution pricing that scales with
+  exactly the thing you are trying to encourage.
+- **Scaling and backup are ordinary ops problems** with ordinary answers, instead of tier
+  limits.
+
+The trade is real: nobody else is on call for the VPS. For a workload of this size that
+has been the right side of the trade.
+
+## What I built
+
+The n8n workflows, the RAG pipeline and its Drive sync, the agent instructions and answer
+rules, the handover and deduplication logic, and the Docker deployment. It runs in
+production for the client brand today.

@@ -1,0 +1,38 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
+---
+
+<Base title="Page not found" description="That page does not exist.">
+  <section class="section not-found">
+    <div class="container">
+      <p class="eyebrow">404</p>
+      <h1>That page does not exist.</h1>
+      <p class="lede">
+        The link may be out of date, or the page moved. The work is all still here.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href={url('/')}>Back home</a>
+        <a class="btn btn-ghost" href={url('/projects')}>Browse projects</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .not-found .container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: start;
+    min-height: 46vh;
+    justify-content: center;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+</style>
