@@ -1,0 +1,301 @@
+---
+import { site } from '../site.config';
+
+/**
+ * Work history drawn as branches off a single time axis.
+ *
+ * A plain list hides the fact that several of these roles ran at the same time.
+ * Branching them off one trunk shows the overlap at a glance, which is the
+ * honest shape of the last two years.
+ *
+ * Everything is derived from `start` / `end` in site.config.ts — no hard-coded
+ * coordinates, so adding a role just works.
+ */
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** 'YYYY-MM' -> absolute month number, so arithmetic on dates is just integers. */
+const toMonth = (ym: string) => {
+  const [y, m] = ym.split('-').map(Number);
+  return y * 12 + (m - 1);
+};
+
+const monthLabel = (n: number) => `${MONTHS[n % 12]} ${Math.floor(n / 12)}`;
+
+const today = new Date();
+const nowMonth = today.getFullYear() * 12 + today.getMonth();
+
+// Earliest start first, so branches stack upward in the order they began.
+const roles = [...site.experience].sort((a, b) => toMonth(a.start) - toMonth(b.start));
+
+const spans = roles.map((r) => ({
+  ...r,
+  from: toMonth(r.start),
+  to: r.end ? toMonth(r.end) : nowMonth,
+  ongoing: r.end === null,
+}));
+
+const domainStart = Math.min(...spans.map((s) => s.from)) - 2;
+const domainEnd = Math.max(...spans.map((s) => s.to), nowMonth) + 2;
+const domain = domainEnd - domainStart;
+
+// ---- geometry -------------------------------------------------------------
+const W = 900;
+const PAD_L = 32;
+const PAD_R = 32;
+const PLOT_W = W - PAD_L - PAD_R;
+const LANE_H = 58;
+const TOP_PAD = 26;
+
+const trunkY = TOP_PAD + spans.length * LANE_H + 16;
+const H = trunkY + 44;
+
+const x = (month: number) => PAD_L + ((month - domainStart) / domain) * PLOT_W;
+const laneY = (i: number) => trunkY - 40 - i * LANE_H;
+
+// Quarter ticks across the whole domain.
+const ticks: number[] = [];
+for (let t = Math.ceil(domainStart / 3) * 3; t <= domainEnd; t += 3) ticks.push(t);
+
+const branches = spans.map((s, i) => {
+  const sx = x(s.from);
+  const ex = x(s.to);
+  const y = laneY(i);
+  return {
+    ...s,
+    sx,
+    ex,
+    y,
+    // S-curve peeling off the trunk, then a straight run along its lane.
+    // Both control points sit at the horizontal midpoint so x stays monotonic
+    // and the curve reads as one smooth sweep rather than a kink.
+    path: `M ${(sx - 26).toFixed(1)} ${trunkY} C ${(sx - 13).toFixed(1)} ${trunkY}, ${(sx - 13).toFixed(1)} ${y}, ${sx.toFixed(1)} ${y} L ${ex.toFixed(1)} ${y}`,
+    range: s.ongoing
+      ? `${monthLabel(s.from)} → now`
+      : `${monthLabel(s.from)} → ${monthLabel(s.to)}`,
+  };
+});
+
+const nowX = x(nowMonth);
+const plotRight = PAD_L + PLOT_W;
+
+const summary = roles
+  .map((r) => `${r.role} at ${r.company}, ${r.period}`)
+  .join('. ');
+---
+
+<div class="career-tree">
+  <div class="scroll">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Work history timeline. ${summary}.`}>
+      <defs>
+        <marker
+          id="ct-arrow"
+          viewBox="0 0 10 10"
+          refX="7"
+          refY="5"
+          markerWidth="5.5"
+          markerHeight="5.5"
+          orient="auto-start-reverse"
+        >
+          <path d="M0 1 L9 5 L0 9 z" fill="currentColor" />
+        </marker>
+      </defs>
+
+      {/* quarter gridlines */}
+      {
+        ticks.map((t) => (
+          <line
+            class:list={['grid', { year: t % 12 === 0 }]}
+            x1={x(t)}
+            y1={TOP_PAD - 12}
+            x2={x(t)}
+            y2={trunkY}
+          />
+        ))
+      }
+
+      {/* today marker */}
+      <line class="now-line" x1={nowX} y1={TOP_PAD - 12} x2={nowX} y2={trunkY} />
+      <text class="now-label" x={nowX} y={TOP_PAD - 18} text-anchor="middle">today</text>
+
+      {/* the trunk: one continuous working life */}
+      <line class="trunk" x1={PAD_L - 14} y1={trunkY} x2={plotRight} y2={trunkY} />
+
+      {/* axis labels */}
+      {
+        ticks.map((t) => (
+          <text
+            class:list={['tick', { year: t % 12 === 0 }]}
+            x={x(t)}
+            y={trunkY + 20}
+            text-anchor="middle"
+          >
+            {t % 12 === 0 ? Math.floor(t / 12) : MONTHS[t % 12]}
+          </text>
+        ))
+      }
+
+      {/* branches */}
+      {
+        branches.map((b) => (
+          <g class:list={['branch', `tone-${b.tone}`]}>
+            <path class="line" d={b.path} />
+
+            {b.ongoing && (
+              <line
+                class="continues"
+                x1={b.ex}
+                y1={b.y}
+                x2={plotRight - 6}
+                y2={b.y}
+                marker-end="url(#ct-arrow)"
+              />
+            )}
+
+            <circle class="node start" cx={b.sx} cy={b.y} r="5" />
+            {!b.ongoing && <circle class="node end" cx={b.ex} cy={b.y} r="4" />}
+            <circle class="node root" cx={b.sx - 26} cy={trunkY} r="3.5" />
+
+            <text class="company" x={b.sx + 12} y={b.y - 12}>
+              {b.company}
+            </text>
+            <text class="meta" x={b.sx + 12} y={b.y + 17}>
+              {b.role} · {b.range}
+            </text>
+          </g>
+        ))
+      }
+    </svg>
+  </div>
+
+  <p class="hint mono">Overlapping branches ran at the same time.</p>
+</div>
+
+<style>
+  .career-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  /* The chart needs room to stay legible; on a phone it scrolls sideways
+     inside this box rather than squashing or overflowing the page. */
+  .scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.35rem 0;
+  }
+
+  svg {
+    width: 100%;
+    min-width: 680px;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+
+  .grid {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .grid.year {
+    stroke: var(--border-strong);
+  }
+
+  .now-line {
+    stroke: var(--text-faint);
+    stroke-width: 1.2;
+    stroke-dasharray: 3 4;
+    opacity: 0.75;
+  }
+
+  .now-label {
+    fill: var(--text-faint);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .trunk {
+    stroke: var(--text);
+    stroke-width: 2;
+    stroke-linecap: round;
+    opacity: 0.85;
+  }
+
+  .tick {
+    fill: var(--text-faint);
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+
+  .tick.year {
+    fill: var(--text);
+    font-weight: 600;
+    font-size: 11.5px;
+  }
+
+  /* Each branch carries one colour through its line, nodes and label. */
+  .branch {
+    color: var(--accent);
+  }
+
+  .branch.tone-signal {
+    color: var(--signal);
+  }
+
+  .branch.tone-violet {
+    color: var(--violet);
+  }
+
+  .line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+  }
+
+  .continues {
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-dasharray: 5 5;
+    opacity: 0.7;
+  }
+
+  .node {
+    fill: var(--bg);
+    stroke: currentColor;
+    stroke-width: 2.4;
+  }
+
+  .node.root {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .node.end {
+    fill: currentColor;
+  }
+
+  .company {
+    fill: var(--text);
+    font-family: var(--font-display);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .meta {
+    fill: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+
+  .hint {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+</style>

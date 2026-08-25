@@ -73,6 +73,10 @@ export const site = {
       'Efficient Face Recognition on Embedded Devices via Structured Pruning and Stereo-Camera Feature Fusion',
     advisor: 'Dr. Cao Van Kien',
     note: 'Graduation thesis, Faculty of Electronics Technology.',
+    /** Where the paper is published. Leave empty and no link is rendered. */
+    url: '',
+    /** Journal, conference or repository name shown on the link. */
+    venue: '',
   },
 
   certificate: {
@@ -80,18 +84,40 @@ export const site = {
     issuer: 'Arizona State University & Dow Vietnam STEM Program',
   },
 
+  /**
+   * Roles, newest first for the written list.
+   *
+   * `start` / `end` drive the branch chart on the home and about pages, so they
+   * must be real 'YYYY-MM' values. `end: null` means the role is still running.
+   * `tone` picks the branch colour: accent | signal | violet.
+   */
   experience: [
     {
       company: 'BEE HOOME TECHNOLOGY JSC',
       role: 'Fullstack Engineer',
       period: 'May 2025 — Present',
+      start: '2025-05',
+      end: null,
+      tone: 'accent',
       summary:
         'Self-hosted conversational AI: an n8n + RAG support agent answering Facebook Messenger and Page comments 24/7, grounded in a PGVector knowledge base.',
+    },
+    {
+      company: 'IIG',
+      role: 'IT (Part-time)',
+      period: 'March 2026 — October 2026',
+      start: '2026-03',
+      end: '2026-10',
+      tone: 'violet',
+      summary: '',
     },
     {
       company: 'HBQ Technology',
       role: 'R&D Engineer',
       period: 'April 2025 — April 2026',
+      start: '2025-04',
+      end: '2026-04',
+      tone: 'signal',
       summary:
         'Connected drone platform (4G/5G video + MAVLink control) and an edge face recognition product on Raspberry Pi 5 with a Hailo-8L accelerator.',
     },

@@ -35,6 +35,20 @@ const projects = defineCollection({
       })
       .default({ state: 'none' }),
 
+    /**
+     * Extra outbound links shown next to the source badge — a published paper,
+     * a live demo, documentation. Omitted entirely when empty.
+     */
+    links: z
+      .array(
+        z.object({
+          label: z.string(),
+          url: z.url(),
+          kind: z.enum(['paper', 'demo', 'doc', 'video']).default('doc'),
+        })
+      )
+      .default([]),
+
     /** Hero media at the top of the case study. Paths are site-root relative. */
     video: z.string().optional(),
     poster: z.string().optional(),

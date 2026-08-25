@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import StackList from '../components/StackList.astro';
+import CareerTree from '../components/CareerTree.astro';
 import { site } from '../site.config';
 import { url } from '../lib/url';
 ---
@@ -58,6 +59,18 @@ import { url } from '../lib/url';
           <h3>{site.research.title}</h3>
           <p class="fact-org">Advisor: {site.research.advisor}</p>
           <p class="fact-note">{site.research.note}</p>
+          {
+            site.research.url && (
+              <a class="paper-link" href={site.research.url} target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M13.5 6.5 15 5a4.6 4.6 0 0 1 6.5 6.5l-2 2a4.6 4.6 0 0 1-6.5 0" />
+                  <path d="M10.5 17.5 9 19a4.6 4.6 0 0 1-6.5-6.5l2-2a4.6 4.6 0 0 1 6.5 0" />
+                  <path d="m9.5 14.5 5-5" />
+                </svg>
+                Read the paper{site.research.venue ? ` — ${site.research.venue}` : ''}
+              </a>
+            )
+          }
           <p class="fact-note">
             The applied result of this thesis is the{' '}
             <a href={url('/projects/edge-ai-face-recognition')}>edge face recognition system</a>.
@@ -76,6 +89,7 @@ import { url } from '../lib/url';
   <section class="section experience-section">
     <div class="container">
       <h2 class="eyebrow">Experience</h2>
+      <CareerTree />
       <ol class="timeline">
         {
           site.experience.map((job) => (
@@ -84,7 +98,7 @@ import { url } from '../lib/url';
               <div class="job-what">
                 <h3>{job.company}</h3>
                 <p class="job-role mono">{job.role}</p>
-                <p class="job-summary">{job.summary}</p>
+                {job.summary && <p class="job-summary">{job.summary}</p>}
               </div>
             </li>
           ))
@@ -166,6 +180,22 @@ import { url } from '../lib/url';
     line-height: 1.55;
     margin-top: auto;
     padding-top: 0.35rem;
+  }
+
+  .paper-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.15rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .paper-link svg {
+    width: 1em;
+    height: 1em;
+    flex: none;
   }
 
   .experience-section {
