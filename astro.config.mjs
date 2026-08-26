@@ -4,10 +4,10 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
 // Deployed to GitHub Pages as a *project* site, so the final URL is
-// https://nguyen-thinh-48.github.io/portfolio-s-/
+// https://nguyen-thinh-48.github.io/NguyenBaThinh/
 // `base` must match the repository name. If you ever rename the repo, or move
 // to a custom domain, change BASE and nothing else.
-const BASE = '/portfolio-s-';
+const BASE = '/NguyenBaThinh';
 
 /**
  * Prefix root-relative links and images written in Markdown with the site base.

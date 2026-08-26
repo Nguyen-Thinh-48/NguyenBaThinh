@@ -4,7 +4,7 @@ Personal site for an AIoT / Edge AI engineer. Static, built with
 [Astro](https://astro.build), published to GitHub Pages by GitHub Actions on every
 push to `main`.
 
-**Live:** https://nguyen-thinh-48.github.io/portfolio-s-/
+**Live:** https://nguyen-thinh-48.github.io/NguyenBaThinh/
 
 ---
 
@@ -12,7 +12,7 @@ push to `main`.
 
 ```bash
 npm install
-npm run dev      # http://localhost:4321/portfolio-s-/
+npm run dev      # http://localhost:4321/NguyenBaThinh/
 ```
 
 | Command | What it does |
@@ -22,7 +22,7 @@ npm run dev      # http://localhost:4321/portfolio-s-/
 | `npm run preview` | Serve the built `dist/` exactly as it will be published |
 | `npm run check` | Type-check the Astro components and content schema |
 
-> The dev URL includes `/portfolio-s-` because the site is deployed to a repository
+> The dev URL includes `/NguyenBaThinh` because the site is deployed to a repository
 > subpath. Do not drop it.
 
 ---
@@ -99,7 +99,7 @@ Available in the `media` slot: `<Video>`, `<Figure>` (images) and `<Diagram>`
 ## Media files
 
 Put them in `public/media/<project-slug>/` and reference them from the root:
-`/media/<project-slug>/demo.mp4`. Never hard-code `/portfolio-s-/` — the `url()`
+`/media/<project-slug>/demo.mp4`. Never hard-code `/NguyenBaThinh/` — the `url()`
 helper in `src/lib/url.ts` adds it.
 
 **Keep videos small.** GitHub rejects any single file over 100 MB, and every visitor
@@ -135,7 +135,7 @@ First-time setup, once the repository exists on GitHub:
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 2. Push to `main`. The Actions tab shows the build; it takes about a minute.
-3. The site appears at `https://<username>.github.io/portfolio-s-/`.
+3. The site appears at `https://<username>.github.io/NguyenBaThinh/`.
 
 If the repository is ever renamed, change `base` in `astro.config.mjs` to match the
 new name — that one value controls every internal link.
