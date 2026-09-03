@@ -2,9 +2,10 @@
 title: Self-Hosted RAG Support Agent
 tagline: A Facebook support assistant that answers only from the company's documents, queues its own work, and steps aside the moment a human takes over.
 summary: >-
-  A production n8n automation answering Facebook Messenger and Page comments from
-  a PGVector knowledge base, built as a webhook-plus-worker queue with a status
-  state machine, self-syncing document ingestion and per-user human handover.
+  A production automation on a self-hosted n8n instance — my own Docker stack on a
+  Hostinger VPS, not n8n Cloud — answering Facebook Messenger and Page comments from
+  a PGVector knowledge base, built as a webhook-plus-worker queue with a status state
+  machine, self-syncing document ingestion and per-user human handover.
 org: BEE HOOME TECHNOLOGY JSC
 role: Fullstack Engineer
 period: May 2025 — Present
@@ -30,7 +31,7 @@ highlights:
   - value: '3'
     label: Top-k chunks retrieved and handed to the model per question
   - value: '2'
-    label: Containers running the entire stack on one VPS
+    label: Containers I run myself on a Hostinger VPS — n8n and Postgres, no managed service
 stack:
   - group: Orchestration
     items: ['n8n (self-hosted)', 'Webhooks', 'Schedule triggers', 'n8n Data Tables', 'JavaScript', 'JSON']
@@ -41,7 +42,7 @@ stack:
   - group: Integrations
     items: ['Facebook Graph API', 'Google Drive API', 'Messaging platform APIs', 'Telegram alerts']
   - group: Infrastructure
-    items: ['Docker', 'Docker Compose', 'Linux VPS']
+    items: ['Docker', 'Docker Compose', 'Linux', 'Hostinger VPS', 'Self-hosted n8n']
 ---
 
 import MediaSplit from '../../components/MediaSplit.astro';
@@ -326,19 +327,31 @@ still warm.
 The failure mode I care about is not "the bot was wrong" — it is "nobody knew the bot
 was wrong". Every exit from the state machine is recorded.
 
-## Why self-hosted
+## Self-hosted, not n8n Cloud
 
-n8n and PostgreSQL with the PGVector extension run in **Docker Compose on a single
-VPS**, deliberately rather than on the managed equivalents.
+Worth being precise about, because "built on n8n" usually means someone clicked
+around n8n Cloud. This does not run there.
+
+The whole stack — the **n8n instance itself** and **PostgreSQL with the PGVector
+extension** — runs in **Docker Compose on a Hostinger VPS** that I set up and maintain.
+I own the containers, the database, the backups and the upgrades.
+
+That was a deliberate choice over the managed product:
 
 - **Customer conversations stay on infrastructure the company controls.** For a brand
-  handling enquiries and contact details, that is not a preference.
-- **Cost is a fixed server bill**, not per-execution pricing that scales with exactly the
-  thing you are trying to encourage.
-- **Backup and scaling are ordinary ops problems** with ordinary answers.
+  handling enquiries and contact details, that is not a preference. On the hosted
+  product, every message would transit someone else's tenant.
+- **Cost is a fixed monthly server bill**, not per-execution pricing that scales with
+  exactly the thing you are trying to encourage. A chatbot that succeeds gets more
+  expensive on a metered plan.
+- **No workflow-execution limits** to design around, and no waiting on a vendor to
+  enable a node.
+- **Backup, upgrades and scaling become ordinary ops problems** with ordinary answers,
+  instead of tier limits.
 
-The trade is real — nobody else is on call for that VPS. At this workload it has been
-the right side of the trade.
+The trade is real — nobody else is on call for that VPS, and a bad `docker compose`
+day is mine to fix. At this workload it has been the right side of the trade, and
+running it myself is where most of what I learned about the system came from.
 
 ## Understanding it from the bottom, not the docs
 

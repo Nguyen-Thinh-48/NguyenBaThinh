@@ -105,7 +105,7 @@ export const site = {
       end: null,
       tone: 'accent',
       summary:
-        'Self-hosted conversational AI: an n8n + RAG support agent answering Facebook Messenger and Page comments 24/7, grounded in a PGVector knowledge base.',
+        'Self-hosted conversational AI: an n8n + RAG support agent answering Facebook Messenger and Page comments 24/7, grounded in a PGVector knowledge base and running on my own Docker stack on a VPS.',
     },
     {
       company: 'IIG Vietnam',
