@@ -1,0 +1,455 @@
+<!DOCTYPE html><html lang="en" data-title-en="Transformers, INT8 &amp; RAG From Scratch — Nguyen Ba Thinh" data-title-vi="Transformer, INT8 &amp; RAG từ con số 0 — Nguyen Ba Thinh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="Astro v7.2.6"><title>Transformers, INT8 &amp; RAG From Scratch — Nguyen Ba Thinh</title><meta name="description" content="A self-directed study project: tokenizer, positional encoding, attention, a full GPT and an INT8 quantization pipeline implemented from first principles in PyTorch, then a retrieval pipeline built and scored step by step — BM25, dense, hybrid, rerank — with every choice measured rather than assumed."><meta name="author" content="Nguyen Ba Thinh"><link rel="canonical" href="https://nguyen-thinh-48.github.io/NguyenBaThinh/projects/llm-from-scratch/"><meta property="og:type" content="website"><meta property="og:site_name" content="Nguyen Ba Thinh"><meta property="og:title" content="Transformers, INT8 &amp; RAG From Scratch — Nguyen Ba Thinh"><meta property="og:description" content="A self-directed study project: tokenizer, positional encoding, attention, a full GPT and an INT8 quantization pipeline implemented from first principles in PyTorch, then a retrieval pipeline built and scored step by step — BM25, dense, hybrid, rerank — with every choice measured rather than assumed."><meta property="og:url" content="https://nguyen-thinh-48.github.io/NguyenBaThinh/projects/llm-from-scratch/"><meta property="og:locale" content="en_US"><meta property="og:locale:alternate" content="vi_VN"><meta name="twitter:card" content="summary"><link rel="icon" type="image/svg+xml" href="/NguyenBaThinh/favicon.svg"><link rel="sitemap" href="/NguyenBaThinh/sitemap-index.xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"><script>
+      (() => {
+        const root = document.documentElement;
+        try {
+          const saved = localStorage.getItem('theme');
+          if (saved === 'dark' || saved === 'light') {
+            root.setAttribute('data-theme', saved);
+          }
+        } catch {
+          /* storage blocked — fall back to the OS preference */
+        }
+
+        // Language: an explicit choice wins, otherwise follow the browser.
+        let lang = null;
+        try {
+          lang = localStorage.getItem('lang');
+        } catch {
+          /* storage blocked */
+        }
+        if (lang !== 'en' && lang !== 'vi') {
+          lang = (navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en';
+        }
+        root.setAttribute('data-lang', lang);
+        root.setAttribute('lang', lang);
+        const title = root.getAttribute('data-title-' + lang);
+        if (title) document.title = title;
+      })();
+    </script><link rel="stylesheet" href="/NguyenBaThinh/_astro/Base.BQUn7St1.css"><style>.stat-grid[data-astro-cid-ifrd74vy]{background:var(--border);border:1px solid var(--border);border-radius:var(--radius);grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;margin:0;display:grid;overflow:hidden}.stat[data-astro-cid-ifrd74vy]{background:var(--surface);flex-direction:column;gap:.35rem;padding:1.25rem 1.35rem;display:flex}.dense[data-astro-cid-ifrd74vy] .stat[data-astro-cid-ifrd74vy]{padding:1rem 1.15rem}.stat-value[data-astro-cid-ifrd74vy]{font-family:var(--font-display);letter-spacing:-.03em;color:var(--text);align-items:baseline;gap:.18em;font-weight:600;display:flex}.num[data-astro-cid-ifrd74vy]{font-size:clamp(1.75rem,1.4rem + 1.4vw,2.4rem);line-height:1}.dense[data-astro-cid-ifrd74vy] .num[data-astro-cid-ifrd74vy]{font-size:clamp(1.5rem,1.25rem + 1vw,1.95rem)}.unit[data-astro-cid-ifrd74vy]{font-family:var(--font-mono);color:var(--signal);font-size:.9rem;font-weight:500}.stat-label[data-astro-cid-ifrd74vy]{color:var(--text-muted);text-wrap:pretty;margin:0;font-size:.83rem;line-height:1.5}
+.stack-block[data-astro-cid-k5dku353]{flex-direction:column;gap:1.5rem;display:flex}.groups[data-astro-cid-k5dku353]{grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1.5rem 2rem;display:grid}.group[data-astro-cid-k5dku353]{border-top:1px solid var(--border);flex-direction:column;gap:.7rem;padding-top:.9rem;display:flex}.group-name[data-astro-cid-k5dku353]{font-family:var(--font-display);letter-spacing:.02em;color:var(--text);font-size:.82rem;font-weight:600}
+</style><link rel="stylesheet" href="/NguyenBaThinh/_astro/_..Dk0FVXV0.css"><style>.video-figure[data-astro-cid-yngxbivw]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-yngxbivw]{aspect-ratio:var(--ratio);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);background:#05070b;position:relative;overflow:hidden}.portrait[data-astro-cid-yngxbivw] .frame[data-astro-cid-yngxbivw],.portrait[data-astro-cid-yngxbivw] figcaption[data-astro-cid-yngxbivw]{max-width:340px;margin-inline:auto}video[data-astro-cid-yngxbivw]{object-fit:contain;background:#05070b;width:100%;height:100%}figcaption[data-astro-cid-yngxbivw]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style><style>.media-split[data-astro-cid-aeoobavx]{align-items:start;gap:1.75rem;margin-block:clamp(2.25rem,5vw,3.5rem);display:grid}.col-text[data-astro-cid-aeoobavx]>:first-child,.col-text[data-astro-cid-aeoobavx] h3:first-child,.col-text[data-astro-cid-aeoobavx] h2:first-child{margin-top:0}.col-text[data-astro-cid-aeoobavx]{max-width:62ch}@media (width>=900px){.media-split[data-astro-cid-aeoobavx]{grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);align-items:center;gap:clamp(2rem,4vw,3.25rem)}.media-split[data-astro-cid-aeoobavx].wide{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr)}.media-split[data-astro-cid-aeoobavx].flip .col-text[data-astro-cid-aeoobavx]{order:2}.media-split[data-astro-cid-aeoobavx].flip .col-media[data-astro-cid-aeoobavx]{order:1}.media-split[data-astro-cid-aeoobavx].sticky{align-items:start}.media-split[data-astro-cid-aeoobavx].sticky .col-media[data-astro-cid-aeoobavx]{top:calc(var(--header-h) + 1.75rem);position:sticky}}.diagram[data-astro-cid-mb5gojzx]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-mb5gojzx]{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm);padding:1.35rem;overflow-x:auto}.flush[data-astro-cid-mb5gojzx] .frame[data-astro-cid-mb5gojzx]{padding:.5rem}.frame[data-astro-cid-mb5gojzx] svg{width:100%;height:auto;display:block}.frame[data-astro-cid-mb5gojzx] .d-box{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1.2px}.frame[data-astro-cid-mb5gojzx] .d-box-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-box-signal{fill:var(--signal-soft);stroke:var(--signal);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-label{fill:var(--text);font-family:var(--font-display);font-size:12.5px;font-weight:600}.frame[data-astro-cid-mb5gojzx] .d-sub{fill:var(--text-muted);font-family:var(--font-mono);font-size:9.5px}.frame[data-astro-cid-mb5gojzx] .d-edge{stroke:var(--border-strong);stroke-width:1.3px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-accent{stroke:var(--accent);stroke-width:1.5px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-label{fill:var(--text-faint);font-family:var(--font-mono);font-size:8px}.frame[data-astro-cid-mb5gojzx] .d-arrow{fill:var(--border-strong)}.frame[data-astro-cid-mb5gojzx] .d-arrow-accent{fill:var(--accent)}figcaption[data-astro-cid-mb5gojzx]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style><style>.media-split[data-astro-cid-aeoobavx]{align-items:start;gap:1.75rem;margin-block:clamp(2.25rem,5vw,3.5rem);display:grid}.col-text[data-astro-cid-aeoobavx]>:first-child,.col-text[data-astro-cid-aeoobavx] h3:first-child,.col-text[data-astro-cid-aeoobavx] h2:first-child{margin-top:0}.col-text[data-astro-cid-aeoobavx]{max-width:62ch}@media (width>=900px){.media-split[data-astro-cid-aeoobavx]{grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);align-items:center;gap:clamp(2rem,4vw,3.25rem)}.media-split[data-astro-cid-aeoobavx].wide{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr)}.media-split[data-astro-cid-aeoobavx].flip .col-text[data-astro-cid-aeoobavx]{order:2}.media-split[data-astro-cid-aeoobavx].flip .col-media[data-astro-cid-aeoobavx]{order:1}.media-split[data-astro-cid-aeoobavx].sticky{align-items:start}.media-split[data-astro-cid-aeoobavx].sticky .col-media[data-astro-cid-aeoobavx]{top:calc(var(--header-h) + 1.75rem);position:sticky}}.diagram[data-astro-cid-mb5gojzx]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-mb5gojzx]{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm);padding:1.35rem;overflow-x:auto}.flush[data-astro-cid-mb5gojzx] .frame[data-astro-cid-mb5gojzx]{padding:.5rem}.frame[data-astro-cid-mb5gojzx] svg{width:100%;height:auto;display:block}.frame[data-astro-cid-mb5gojzx] .d-box{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1.2px}.frame[data-astro-cid-mb5gojzx] .d-box-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-box-signal{fill:var(--signal-soft);stroke:var(--signal);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-label{fill:var(--text);font-family:var(--font-display);font-size:12.5px;font-weight:600}.frame[data-astro-cid-mb5gojzx] .d-sub{fill:var(--text-muted);font-family:var(--font-mono);font-size:9.5px}.frame[data-astro-cid-mb5gojzx] .d-edge{stroke:var(--border-strong);stroke-width:1.3px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-accent{stroke:var(--accent);stroke-width:1.5px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-label{fill:var(--text-faint);font-family:var(--font-mono);font-size:8px}.frame[data-astro-cid-mb5gojzx] .d-arrow{fill:var(--border-strong)}.frame[data-astro-cid-mb5gojzx] .d-arrow-accent{fill:var(--accent)}figcaption[data-astro-cid-mb5gojzx]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style></head><body><a class="skip-link" href="#main"><span data-l="en">Skip to content</span><span data-l="vi" lang="vi">Bỏ qua tới nội dung</span></a><header class="site-header" data-astro-cid-wpvy4v7s><div class="container bar" data-astro-cid-wpvy4v7s><a class="brand" href="/NguyenBaThinh/" data-astro-cid-wpvy4v7s><span class="brand-mark" aria-hidden="true" data-astro-cid-wpvy4v7s>NT</span><span class="brand-text" data-astro-cid-wpvy4v7s><strong data-astro-cid-wpvy4v7s>Nguyen Ba Thinh</strong><span class="brand-role" data-astro-cid-wpvy4v7s><span data-l="en">AIoT &amp; Edge AI Engineer</span><span data-l="vi" lang="vi">Kỹ sư AIoT &amp; Edge AI</span></span></span></a><nav class="nav" aria-label="Primary" data-astro-cid-wpvy4v7s><a href="/NguyenBaThinh/" class="nav-link nav-home" data-astro-cid-wpvy4v7s><span data-l="en">Home</span><span data-l="vi" lang="vi">Trang chủ</span></a><a href="/NguyenBaThinh/projects" class="nav-link active" aria-current="page" data-astro-cid-wpvy4v7s><span data-l="en">Work</span><span data-l="vi" lang="vi">Dự án</span></a><a href="/NguyenBaThinh/about" class="nav-link" data-astro-cid-wpvy4v7s><span data-l="en">About</span><span data-l="vi" lang="vi">Giới thiệu</span></a><a class="nav-link nav-cv" data-l="en" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh.pdf" target="_blank" rel="noopener" data-astro-cid-wpvy4v7s>CV</a><a class="nav-link nav-cv" data-l="vi" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh_VI.pdf" target="_blank" rel="noopener" data-astro-cid-wpvy4v7s>CV</a><button id="lang-toggle" class="lang-toggle" type="button" aria-label="Switch language — Chuyển ngôn ngữ" title="English / Tiếng Việt" data-astro-cid-zh35qibh><span class="opt opt-en" data-astro-cid-zh35qibh>EN</span><span class="opt opt-vi" data-astro-cid-zh35qibh>VI</span></button><script>
+  (() => {
+    const btn = document.getElementById('lang-toggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.getAttribute('data-lang') === 'vi' ? 'en' : 'vi';
+
+      root.setAttribute('data-lang', next);
+      root.setAttribute('lang', next);
+      const title = root.getAttribute(`data-title-${next}`);
+      if (title) document.title = title;
+
+      try {
+        localStorage.setItem('lang', next);
+      } catch {
+        /* private mode / blocked storage — the choice just won't persist */
+      }
+    });
+  })();
+</script><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle colour theme — Đổi giao diện sáng/tối" title="Toggle colour theme — Đổi giao diện sáng/tối" data-astro-cid-l6lhmie6><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" data-astro-cid-l6lhmie6><circle cx="12" cy="12" r="4.2" data-astro-cid-l6lhmie6></circle><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4" data-astro-cid-l6lhmie6></path></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-l6lhmie6><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.9 6.9 0 0 0 10.7 10.7z" data-astro-cid-l6lhmie6></path></svg></button><script>
+  (() => {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const explicit = root.getAttribute('data-theme');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const currentlyDark = explicit ? explicit === 'dark' : systemDark;
+      const next = currentlyDark ? 'light' : 'dark';
+
+      root.setAttribute('data-theme', next);
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        /* private mode / blocked storage — the choice just won't persist */
+      }
+    });
+  })();
+</script></nav></div></header><main id="main"><article class="case" data-astro-cid-s35pujdj><header class="case-header" data-astro-cid-s35pujdj><div class="container" data-astro-cid-s35pujdj><a class="back" href="/NguyenBaThinh/projects" data-astro-cid-s35pujdj><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-s35pujdj><path d="M19 12H6M11.5 5.5 5 12l6.5 6.5" data-astro-cid-s35pujdj></path></svg><span data-l="en">All work</span><span data-l="vi" lang="vi">Tất cả dự án</span></a><p class="meta mono" data-astro-cid-s35pujdj><span data-astro-cid-s35pujdj><span data-l="en">Personal project</span><span data-l="vi" lang="vi">Dự án cá nhân</span></span><span aria-hidden="true" data-astro-cid-s35pujdj>·</span><span data-astro-cid-s35pujdj><span data-l="en">Author</span><span data-l="vi" lang="vi">Tác giả</span></span><span aria-hidden="true" data-astro-cid-s35pujdj>·</span><span data-astro-cid-s35pujdj><span data-l="en">Aug 2026 — ongoing</span><span data-l="vi" lang="vi">T8/2026 — đang thực hiện</span></span></p><h1 data-astro-cid-s35pujdj><span data-l="en">Transformers, INT8 &amp; RAG From Scratch</span><span data-l="vi" lang="vi">Transformer, INT8 &amp; RAG từ con số 0</span></h1><p class="lede" data-astro-cid-s35pujdj><span data-l="en">A character-level GPT, its INT8 quantizer and a measured RAG pipeline written line by line, so the numbers on an edge accelerator stop being a black box.</span><span data-l="vi" lang="vi">Một GPT mức ký tự, bộ lượng tử hoá INT8 và một pipeline RAG có đo đạc, viết từng dòng, để các con số trên bộ tăng tốc biên không còn là hộp đen.</span></p><ul class="chip-list" data-astro-cid-s35pujdj><li class="chip chip-accent" data-astro-cid-s35pujdj>LLM</li><li class="chip chip-accent" data-astro-cid-s35pujdj>RAG</li><li class="chip chip-accent" data-astro-cid-s35pujdj>Python</li><li class="chip chip-accent" data-astro-cid-s35pujdj>Quantization</li></ul><div class="source" data-astro-cid-s35pujdj><a class="btn btn-ghost" href="https://github.com/Nguyen-Thinh-48/AI_agent_learn_project" target="_blank" rel="noopener" data-astro-cid-mjdyrksv><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-astro-cid-mjdyrksv><path d="M12 1.8a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7 0-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.8z" data-astro-cid-mjdyrksv></path></svg><span data-l="en">View source on GitHub</span><span data-l="vi" lang="vi">Xem mã nguồn trên GitHub</span></a></div></div></header><div class="container hero-media" data-astro-cid-s35pujdj><figure class="figure" data-astro-cid-khyig4bw><div class="frame" style="--ratio: 16 / 9; --fit: contain" data-astro-cid-khyig4bw><img src="/NguyenBaThinh/media/llm-from-scratch/attention.svg" alt="The causal attention mask — the lower triangle carries weight, everything above it is hidden from the query." loading="lazy" decoding="async" data-astro-cid-khyig4bw></div><figcaption data-astro-cid-khyig4bw><span data-l="en">The causal attention mask — the lower triangle carries weight, everything above it is hidden from the query.</span><span data-l="vi" lang="vi">Causal attention mask — tam giác dưới mang trọng số, mọi thứ phía trên bị che khỏi query.</span></figcaption></figure></div><div class="container results" data-astro-cid-s35pujdj><h2 class="eyebrow" data-astro-cid-s35pujdj><span data-l="en">Results</span><span data-l="vi" lang="vi">Kết quả</span></h2><dl class="stat-grid dense" data-astro-cid-ifrd74vy><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>883</span><span class="unit" data-astro-cid-ifrd74vy>K</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Parameters in the char-level GPT, every layer hand-written</span><span data-l="vi" lang="vi">Tham số trong GPT mức ký tự, mọi layer đều viết tay</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>1.389</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Validation loss, against a 5.429 blind-guess baseline</span><span data-l="vi" lang="vi">Validation loss, so với mốc đoán mò 5,429</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>0.861</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">nDCG@5 for hybrid BM25 + dense retrieval, up from 0.780 dense-only</span><span data-l="vi" lang="vi">nDCG@5 của truy xuất hybrid BM25 + dense, tăng từ 0,780 khi chỉ dùng dense</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>223</span><span class="unit" data-astro-cid-ifrd74vy>×</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Latency a cross-encoder rerank cost, for 0.029 nDCG@3 lost</span><span data-l="vi" lang="vi">Độ trễ mà rerank bằng cross-encoder phải trả, để mất 0,029 nDCG@3</span></dd></div></dl></div><div class="container" data-astro-cid-s35pujdj><div class="case-body prose" data-l="en" data-astro-cid-s35pujdj><h2 id="why-write-it-by-hand">Why write it by hand</h2>
+<p>I spend most of my time putting models on accelerators. That job goes badly if you
+treat the model as a file. When a network drops six points of accuracy after INT8
+conversion, “the quantizer did it” is not a diagnosis.</p>
+<p>So I rebuilt the stack from the bottom: a tokenizer, then positional encoding, then
+attention, then a working GPT, then an INT8 quantizer for it — each in a notebook, each
+with the intermediate tensors printed and checked. The corpus is Vietnamese text, which
+made the character-level vocabulary interesting on its own: <code>à á ả ã ạ</code> are five
+distinct characters, so <code>V</code> grows to <strong>228</strong> for 409,721 characters of text.</p>
+<p>Everything is measured against a calibration point that costs nothing to compute: an
+untrained model should sit at <code>ln(V) = 5.429</code>. If a freshly initialised network does not
+report that loss, there is a bug, and no amount of training will fix it.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="the-shape-that-never-changes">The shape that never changes</h3><p>Every layer takes <code>[B, T, C]</code> and returns <code>[B, T, C]</code>. That is not an accident — the
+residual connection <code>x = x + f(x)</code> forces both sides to be the same size, and it is
+exactly that constraint that makes depth a free dial: any block plugs in after any
+other block.</p><p>Multi-head attention <strong>divides</strong> the width rather than multiplying it. With <code>C=128</code>
+and four heads, each head works in 32 dimensions, so four independent views of the
+sequence cost the same as one wide one. <code>C % n_head == 0</code> is a hard requirement —
+<code>Block(128, 5)</code> silently discards three dimensions instead of raising.</p><p>Writing out the parameter budget by hand — 29,184 for tokens, 32,768 for positions,
+197,888 per block, then the head — is the cheapest debugging tool in the project. If
+<code>sum(p.numel())</code> does not match the arithmetic, something is wired wrong.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 352" role="img" aria-label="GPT architecture: token and positional embeddings feed a residual stream of width 128, through transformer blocks containing multi-head attention and a feed-forward network, into a language-model head over 228 characters."><defs><marker id="gpt-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="12" width="190" height="46" rx="9" class="d-box"></rect><text x="135" y="32" text-anchor="middle" class="d-label">token_emb</text><text x="135" y="47" text-anchor="middle" class="d-sub">228 × 128 = 29,184</text><rect x="290" y="12" width="190" height="46" rx="9" class="d-box"></rect><text x="385" y="32" text-anchor="middle" class="d-label">pos_emb</text><text x="385" y="47" text-anchor="middle" class="d-sub">256 × 128 = 32,768</text><line x1="135" y1="58" x2="135" y2="88" class="d-edge" marker-end="url(#gpt-arrow)"></line><line x1="385" y1="58" x2="385" y2="88" class="d-edge" marker-end="url(#gpt-arrow)"></line><rect x="40" y="90" width="440" height="38" rx="9" class="d-box"></rect><text x="260" y="114" text-anchor="middle" class="d-label">residual stream — [B, T, C = 128]</text><line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#gpt-arrow)"></line><rect x="40" y="154" width="440" height="116" rx="10" class="d-box-accent"></rect><text x="260" y="175" text-anchor="middle" class="d-label">Transformer Block × n_layer</text><rect x="58" y="185" width="180" height="42" rx="7" class="d-box"></rect><text x="148" y="203" text-anchor="middle" class="d-label">Multi-head attention</text><text x="148" y="218" text-anchor="middle" class="d-sub">4 heads × 32 dim</text><rect x="282" y="185" width="180" height="42" rx="7" class="d-box"></rect><text x="372" y="203" text-anchor="middle" class="d-label">Feed-forward</text><text x="372" y="218" text-anchor="middle" class="d-sub">128 → 512 → 128</text><text x="260" y="248" text-anchor="middle" class="d-sub">+ 2 × LayerNorm · causal mask · residual add</text><text x="260" y="262" text-anchor="middle" class="d-sub">197,888 params per block</text><line x1="260" y1="270" x2="260" y2="294" class="d-edge-accent" marker-end="url(#gpt-arrow)"></line><rect x="40" y="296" width="440" height="46" rx="9" class="d-box-signal"></rect><text x="260" y="316" text-anchor="middle" class="d-label">lm_head — 128 × 228</text><text x="260" y="331" text-anchor="middle" class="d-sub">logits over 228 characters</text></svg></div><figcaption data-astro-cid-mb5gojzx>The model as built: 883,172 parameters at C=128, n_layer=2, and where every one of them lives.</figcaption></figure></div></div>
+<h2 id="what-the-measurements-said">What the measurements said</h2>
+<p>Two knobs, both of which “obviously” help, measured against wall-clock:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Change</th><th>Val loss</th><th>Time</th><th>Parameters</th></tr></thead><tbody><tr><td>Context <code>T</code> = 64</td><td>1.421</td><td>257 s</td><td>883,172</td></tr><tr><td>Context <code>T</code> = 128</td><td><strong>1.389</strong></td><td>558 s</td><td>883,172</td></tr></tbody></table>
+<p>Doubling the context cost <strong>2.2× the training time</strong> and bought 0.032 of loss — and not
+one extra parameter, because the attention matrix is <code>[B, n_head, T, T]</code> and grows with
+<code>T²</code> while the weights do not. That single table is the whole motivation for
+flash-attention, sliding windows and linear attention, and it is more convincing having
+watched the clock myself.</p>
+<p>Going from 2 to 4 layers bought 0.041 of loss for 81% more parameters and 97% more time
+— a better deal than the context increase, which is the sort of thing you only find out
+by trying both.</p>
+<h2 id="the-bug-worth-keeping-in-the-writeup">The bug worth keeping in the writeup</h2>
+<p><code>max_len</code> was 256, but training ran at <code>T=128</code>. Generation, meanwhile, was allowed to run
+out to 256 characters.</p>
+<p>Rows 128–255 of the positional embedding table had therefore never received a single
+gradient. They were still random initialisation. Generated text was fine for exactly 128
+characters and then collapsed into noise — which looks like a sampling bug, or a
+temperature problem, or a corpus problem, and is none of those.</p>
+<p>It is a good bug because the failure is loud but the cause is silent: nothing in the
+code is wrong, the table is simply larger than the training ever reached. Generate at the
+context length you trained at.</p>
+<h2 id="int8-one-rung-at-a-time">INT8, one rung at a time</h2>
+<p>The quantization notebook works up in eight steps, from affine <code>FP32 → INT8 → FP32</code>
+round-tripping, through the arithmetic of scale and zero-point, to the parts that
+actually bite in production:</p>
+<ul>
+<li><strong>Outliers.</strong> A single extreme activation stretches the scale factor and crushes every
+ordinary value into a handful of levels. This is the entire reason methods like AWQ
+exist, and it is much clearer after watching one outlier destroy a tensor.</li>
+<li><strong>Clipping before quantizing</strong>, and what accuracy that trades away.</li>
+<li><strong>Calibration</strong> on data the range was not fitted to — the honest test, since a scale
+tuned on the calibration batch will always flatter itself.</li>
+<li><strong>Applying it to the GPT built earlier</strong>, rather than to a toy tensor.</li>
+<li><strong>Memory on disk versus memory in RAM</strong>, which are not the same number and disappoint
+people who expected a 4× saving everywhere.</li>
+</ul>
+<h2 id="then-retrieval-measured-the-same-way">Then retrieval, measured the same way</h2>
+<p>With the model side understood, the next notebook builds a RAG pipeline the same way —
+one rung at a time, each with its own asserts — on a Vietnamese smart-home product
+corpus: 42 documents and a <strong>golden set of 41 questions</strong> split into easy,
+hard (paraphrased, colloquial, typed without diacritics) and long-document groups.
+A retrieval change only counts if it moves those numbers.</p>
+<p>What the rungs measured:</p>
+<ul>
+<li><strong>Three metrics, not one.</strong> recall@k says whether the right document is there at all,
+MRR and nDCG say how high. A random ranker scores 0.054 MRR; a perfect one scores 1.0 —
+the metrics are checked against both ends before they are trusted.</li>
+<li><strong><code>chunk_size=1000</code> is 1000 <em>what</em>?</strong> The longest document is 3,433 characters, 750
+words, 879 tokens for the e5 embedder and 1,626 for GPT-4’s tokenizer. The embedder
+silently truncates at 512 tokens, so long documents lost their second half: chunking
+by real tokens took the long-document group from <strong>0.60 to 1.00 recall@3</strong>.</li>
+<li><strong>A chunk-size sweep</strong> instead of a guess, scored on a dev split and confirmed on a
+held-out test split.</li>
+<li><strong>Hybrid wins, and the per-group table says why.</strong> BM25 rescues the colloquial and
+undiacritised questions; dense rescues the paraphrases. Fusing the two rankings with
+Reciprocal Rank Fusion beats both:</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Retriever</th><th>recall@3</th><th>nDCG@5</th><th>nDCG@5 — hard questions</th></tr></thead><tbody><tr><td>BM25</td><td>0.878</td><td>0.797</td><td>0.690</td></tr><tr><td>Dense (e5-small)</td><td>0.805</td><td>0.780</td><td>0.453</td></tr><tr><td><strong>Hybrid (RRF)</strong></td><td><strong>0.902</strong></td><td><strong>0.861</strong></td><td><strong>0.719</strong></td></tr></tbody></table>
+<ul>
+<li><strong>Measure before you trust a reranker.</strong> A cross-encoder on top of the hybrid cost
+<strong>223× the latency</strong> (11 ms → 2.4 s per query) and <em>lowered</em> nDCG@3 by 0.029. On this
+corpus, and on edge hardware, it does not earn its place — so it stays out.</li>
+<li><strong>Real users’ questions.</strong> Stripping diacritics on both sides and splitting compound
+questions while carrying the subject over lifted the hard group from <strong>0.719 to 0.766</strong>.</li>
+<li><strong>Context assembly</strong> — de-duplicating near-identical chunks and packing sources into a
+fixed token budget with citations — is where the latest rung finished.</li>
+</ul>
+<p>This is the same pipeline that runs in the <a href="/NguyenBaThinh/projects/rag-chatbot-n8n">production support agent</a>,
+taken apart: there I configured <code>top-k</code> and chunk sizes; here I measured why those values.</p>
+<h2 id="progress-so-far">Progress so far</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Notebook</th><th>Topic</th><th>Status</th></tr></thead><tbody><tr><td><code>tuan1_tokenizer_vitri_bac_12_18</code></td><td>Tokenizer and positional encoding</td><td>Done</td></tr><tr><td><code>attention_thang_10_bac</code></td><td>Attention in ten rungs</td><td>Done</td></tr><tr><td><code>tuan2_gpt_bac_19_28</code></td><td>The character-level GPT</td><td>Done</td></tr><tr><td><code>tuan2_gpt_BPE_level</code></td><td>The same GPT on BPE tokens</td><td>Done</td></tr><tr><td><code>int8_from_scratch_thang_Q1_Q8</code></td><td>INT8 quantization, Q1–Q8</td><td>Done</td></tr><tr><td><code>tuan3_rag_bac_R1_R12</code></td><td>RAG from scratch</td><td>R1–R10 done; R11–R16 next</td></tr></tbody></table>
+<p>Next on the plan: answer verification and the vector-index internals (R11–R12),
+Vietnamese queries over English documents (R13–R16), then hardware, agents and
+fine-tuning in the following weeks.</p>
+<h2 id="what-is-in-the-repository">What is in the repository</h2>
+<p>The notebooks above, plus a written parameter reference (<code>THAM_SO_GPT.md</code>) that explains
+every hyperparameter with the measured effect of changing it, and interactive HTML
+visualisers — token heatmaps and the LLM data flow — for stepping through what happens
+inside.</p>
+<p>It is a study project and it says so. The value is that the next time a model loses
+accuracy on a Hailo or a TensorRT conversion, or a retriever starts returning the wrong
+document, I know which layer to suspect — and how to measure it.</p></div><div class="case-body prose" data-l="vi" lang="vi" data-astro-cid-s35pujdj><h2 id="vì-sao-phải-tự-viết-tay">Vì sao phải tự viết tay</h2>
+<p>Phần lớn thời gian tôi đưa mô hình lên các bộ tăng tốc. Công việc đó sẽ tệ nếu coi mô hình
+chỉ là một file. Khi một mạng mất sáu điểm độ chính xác sau khi chuyển sang INT8, câu “do
+bộ lượng tử hoá” không phải là một chẩn đoán.</p>
+<p>Vì vậy tôi xây lại toàn bộ từ dưới lên: tokenizer, rồi positional encoding, rồi attention,
+rồi một GPT chạy được, rồi bộ lượng tử hoá INT8 cho nó — mỗi phần trong một notebook, mỗi
+tensor trung gian đều được in ra và kiểm tra. Kho dữ liệu là văn bản tiếng Việt, nên riêng
+bộ từ vựng mức ký tự đã thú vị: <code>à á ả ã ạ</code> là năm ký tự khác nhau, nên <code>V</code> tăng lên
+<strong>228</strong> cho 409.721 ký tự văn bản.</p>
+<p>Mọi thứ được đối chiếu với một mốc hiệu chuẩn không tốn chi phí tính: một mô hình chưa huấn
+luyện phải có loss ở mức <code>ln(V) = 5,429</code>. Nếu mạng vừa khởi tạo không báo đúng loss đó thì có
+bug, và huấn luyện bao nhiêu cũng không sửa được.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="hình-dạng-không-bao-giờ-đổi">Hình dạng không bao giờ đổi</h3><p>Mọi layer nhận <code>[B, T, C]</code> và trả về <code>[B, T, C]</code>. Đó không phải ngẫu nhiên — kết nối
+residual <code>x = x + f(x)</code> buộc hai vế cùng kích thước, và chính ràng buộc đó khiến độ sâu trở
+thành một núm vặn tự do: block nào cũng gắn được sau block nào.</p><p>Multi-head attention <strong>chia</strong> độ rộng chứ không nhân lên. Với <code>C=128</code> và bốn head, mỗi head
+làm việc trong 32 chiều, nên bốn góc nhìn độc lập vào chuỗi tốn chi phí bằng một góc nhìn
+rộng. <code>C % n_head == 0</code> là yêu cầu bắt buộc — <code>Block(128, 5)</code> sẽ âm thầm bỏ ba chiều thay vì
+báo lỗi.</p><p>Tự tính ngân sách tham số bằng tay — 29.184 cho token, 32.768 cho vị trí, 197.888 mỗi block,
+rồi đến head — là công cụ debug rẻ nhất của dự án. Nếu <code>sum(p.numel())</code> không khớp với phép
+tính, có chỗ nối sai.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 352" role="img" aria-label="Kiến trúc GPT: token embedding và positional embedding đưa vào residual stream độ rộng 128, qua các transformer block gồm multi-head attention và mạng feed-forward, tới language-model head trên 228 ký tự."><defs><marker id="gpt-arrow-vi" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="12" width="190" height="46" rx="9" class="d-box"></rect><text x="135" y="32" text-anchor="middle" class="d-label">token_emb</text><text x="135" y="47" text-anchor="middle" class="d-sub">228 × 128 = 29.184</text><rect x="290" y="12" width="190" height="46" rx="9" class="d-box"></rect><text x="385" y="32" text-anchor="middle" class="d-label">pos_emb</text><text x="385" y="47" text-anchor="middle" class="d-sub">256 × 128 = 32.768</text><line x1="135" y1="58" x2="135" y2="88" class="d-edge" marker-end="url(#gpt-arrow-vi)"></line><line x1="385" y1="58" x2="385" y2="88" class="d-edge" marker-end="url(#gpt-arrow-vi)"></line><rect x="40" y="90" width="440" height="38" rx="9" class="d-box"></rect><text x="260" y="114" text-anchor="middle" class="d-label">residual stream — [B, T, C = 128]</text><line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#gpt-arrow-vi)"></line><rect x="40" y="154" width="440" height="116" rx="10" class="d-box-accent"></rect><text x="260" y="175" text-anchor="middle" class="d-label">Transformer Block × n_layer</text><rect x="58" y="185" width="180" height="42" rx="7" class="d-box"></rect><text x="148" y="203" text-anchor="middle" class="d-label">Multi-head attention</text><text x="148" y="218" text-anchor="middle" class="d-sub">4 head × 32 chiều</text><rect x="282" y="185" width="180" height="42" rx="7" class="d-box"></rect><text x="372" y="203" text-anchor="middle" class="d-label">Feed-forward</text><text x="372" y="218" text-anchor="middle" class="d-sub">128 → 512 → 128</text><text x="260" y="248" text-anchor="middle" class="d-sub">+ 2 × LayerNorm · causal mask · cộng residual</text><text x="260" y="262" text-anchor="middle" class="d-sub">197.888 tham số mỗi block</text><line x1="260" y1="270" x2="260" y2="294" class="d-edge-accent" marker-end="url(#gpt-arrow-vi)"></line><rect x="40" y="296" width="440" height="46" rx="9" class="d-box-signal"></rect><text x="260" y="316" text-anchor="middle" class="d-label">lm_head — 128 × 228</text><text x="260" y="331" text-anchor="middle" class="d-sub">logits trên 228 ký tự</text></svg></div><figcaption data-astro-cid-mb5gojzx>Mô hình đã xây dựng: 883.172 tham số với C=128, n_layer=2, và vị trí của từng tham số.</figcaption></figure></div></div>
+<h2 id="các-phép-đo-cho-thấy-gì">Các phép đo cho thấy gì</h2>
+<p>Hai núm vặn mà ai cũng nghĩ “chắc chắn” có lợi, được đo theo thời gian thực tế:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Thay đổi</th><th>Val loss</th><th>Thời gian</th><th>Số tham số</th></tr></thead><tbody><tr><td>Context <code>T</code> = 64</td><td>1,421</td><td>257 s</td><td>883.172</td></tr><tr><td>Context <code>T</code> = 128</td><td><strong>1,389</strong></td><td>558 s</td><td>883.172</td></tr></tbody></table>
+<p>Gấp đôi context tốn <strong>gấp 2,2 lần thời gian huấn luyện</strong> và chỉ đổi lại 0,032 loss — mà không
+thêm một tham số nào, vì ma trận attention có kích thước <code>[B, n_head, T, T]</code> và tăng theo <code>T²</code>
+trong khi trọng số thì không. Riêng bảng này đã là toàn bộ động lực cho flash-attention,
+sliding window và linear attention, và nó thuyết phục hơn nhiều khi tự mình nhìn đồng hồ.</p>
+<p>Tăng từ 2 lên 4 layer giảm được 0,041 loss với 81% tham số và 97% thời gian nhiều hơn — một
+thương vụ tốt hơn tăng context, đúng kiểu điều chỉ phát hiện ra khi thử cả hai.</p>
+<h2 id="con-bug-đáng-ghi-lại">Con bug đáng ghi lại</h2>
+<p><code>max_len</code> là 256, nhưng huấn luyện chạy với <code>T=128</code>. Trong khi đó, sinh văn bản lại được phép
+chạy tới 256 ký tự.</p>
+<p>Do đó các hàng 128–255 của bảng positional embedding chưa từng nhận một gradient nào. Chúng
+vẫn là giá trị khởi tạo ngẫu nhiên. Văn bản sinh ra ổn đúng 128 ký tự rồi sụp thành nhiễu —
+trông giống bug sampling, lỗi temperature hay lỗi dữ liệu, nhưng không phải cái nào cả.</p>
+<p>Đây là bug hay vì triệu chứng thì ồn ào nhưng nguyên nhân lại im lặng: code không sai chỗ
+nào, chỉ là bảng lớn hơn phạm vi huấn luyện từng chạm tới. Hãy sinh văn bản ở đúng độ dài
+context đã huấn luyện.</p>
+<h2 id="int8-từng-bậc-một">INT8, từng bậc một</h2>
+<p>Notebook lượng tử hoá đi qua tám bước, từ chuyển đổi affine khứ hồi <code>FP32 → INT8 → FP32</code>,
+qua phép tính scale và zero-point, tới những phần thật sự gây khó khi chạy thực tế:</p>
+<ul>
+<li><strong>Outlier.</strong> Một giá trị kích hoạt cực đoan duy nhất kéo giãn hệ số scale và ép mọi giá
+trị bình thường vào vài mức ít ỏi. Đây chính là lý do các phương pháp như AWQ tồn tại, và
+điều đó rõ ràng hơn nhiều sau khi tận mắt thấy một outlier phá hỏng cả tensor.</li>
+<li><strong>Clipping trước khi lượng tử hoá</strong>, và độ chính xác phải đánh đổi.</li>
+<li><strong>Calibration</strong> trên dữ liệu không dùng để xác định khoảng giá trị — phép thử trung thực,
+vì scale chỉnh trên chính batch calibration thì lúc nào cũng tự khen mình.</li>
+<li><strong>Áp dụng lên GPT đã xây trước đó</strong>, thay vì một tensor đồ chơi.</li>
+<li><strong>Bộ nhớ trên đĩa và bộ nhớ trong RAM</strong> không phải cùng một con số, và làm thất vọng những
+ai mong tiết kiệm 4 lần ở mọi nơi.</li>
+</ul>
+<h2 id="rồi-đến-truy-xuất-đo-theo-cùng-một-cách">Rồi đến truy xuất, đo theo cùng một cách</h2>
+<p>Khi đã hiểu phía mô hình, notebook tiếp theo xây một pipeline RAG theo đúng cách đó — từng
+bậc một, mỗi bậc có assert riêng — trên một kho tài liệu sản phẩm nhà thông minh tiếng Việt:
+42 tài liệu và một <strong>bộ 41 câu hỏi vàng</strong> chia thành nhóm dễ, khó (diễn đạt khác, văn nói,
+gõ không dấu) và nhóm tài liệu dài. Một thay đổi về truy xuất chỉ được tính khi nó làm các
+con số đó dịch chuyển.</p>
+<p>Những gì các bậc đã đo được:</p>
+<ul>
+<li><strong>Ba thước đo, không phải một.</strong> recall@k cho biết tài liệu đúng có nằm trong kết quả
+không, MRR và nDCG cho biết nó đứng cao đến đâu. Bộ xếp hạng ngẫu nhiên đạt 0,054 MRR; bộ
+hoàn hảo đạt 1,0 — thước đo được kiểm ở cả hai đầu trước khi tin dùng.</li>
+<li><strong><code>chunk_size=1000</code> là 1000 <em>cái gì</em>?</strong> Tài liệu dài nhất có 3.433 ký tự, 750 từ, 879
+token với bộ embedding e5 và 1.626 token với tokenizer của GPT-4. Bộ embedding âm thầm cắt
+ở 512 token, nên tài liệu dài bị mất nửa sau: chia chunk theo token thật đưa nhóm tài liệu
+dài từ <strong>0,60 lên 1,00 recall@3</strong>.</li>
+<li><strong>Quét chunk size</strong> thay vì đoán, chấm trên tập dev và xác nhận lại trên tập test giữ riêng.</li>
+<li><strong>Hybrid thắng, và bảng theo nhóm cho biết vì sao.</strong> BM25 cứu các câu văn nói và gõ không
+dấu; dense cứu các câu diễn đạt khác. Gộp hai bảng xếp hạng bằng Reciprocal Rank Fusion
+thắng cả hai:</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Bộ truy xuất</th><th>recall@3</th><th>nDCG@5</th><th>nDCG@5 — câu khó</th></tr></thead><tbody><tr><td>BM25</td><td>0,878</td><td>0,797</td><td>0,690</td></tr><tr><td>Dense (e5-small)</td><td>0,805</td><td>0,780</td><td>0,453</td></tr><tr><td><strong>Hybrid (RRF)</strong></td><td><strong>0,902</strong></td><td><strong>0,861</strong></td><td><strong>0,719</strong></td></tr></tbody></table>
+<ul>
+<li><strong>Đo trước khi tin reranker.</strong> Một cross-encoder đặt trên hybrid tốn <strong>gấp 223 lần độ trễ</strong>
+(11 ms → 2,4 s mỗi truy vấn) mà còn <em>giảm</em> nDCG@3 đi 0,029. Trên kho dữ liệu này, và trên
+phần cứng biên, nó không xứng đáng — nên bị loại.</li>
+<li><strong>Câu hỏi của người thật.</strong> Bỏ dấu ở cả hai phía và tách câu hỏi ghép mà vẫn mang theo chủ
+ngữ đã nâng nhóm câu khó từ <strong>0,719 lên 0,766</strong>.</li>
+<li><strong>Lắp context</strong> — loại các chunk gần trùng nhau và xếp nguồn vào một ngân sách token cố
+định kèm trích dẫn — là bậc mới hoàn thành gần nhất.</li>
+</ul>
+<p>Đây chính là pipeline đang chạy trong <a href="/NguyenBaThinh/projects/rag-chatbot-n8n">agent chăm sóc khách hàng thực tế</a>,
+được tháo ra từng mảnh: ở đó tôi cấu hình <code>top-k</code> và chunk size; ở đây tôi đo vì sao lại là
+những giá trị đó.</p>
+<h2 id="tiến-độ-hiện-tại">Tiến độ hiện tại</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Notebook</th><th>Chủ đề</th><th>Trạng thái</th></tr></thead><tbody><tr><td><code>tuan1_tokenizer_vitri_bac_12_18</code></td><td>Tokenizer và positional encoding</td><td>Xong</td></tr><tr><td><code>attention_thang_10_bac</code></td><td>Attention qua mười bậc</td><td>Xong</td></tr><tr><td><code>tuan2_gpt_bac_19_28</code></td><td>GPT mức ký tự</td><td>Xong</td></tr><tr><td><code>tuan2_gpt_BPE_level</code></td><td>Cùng GPT đó trên token BPE</td><td>Xong</td></tr><tr><td><code>int8_from_scratch_thang_Q1_Q8</code></td><td>Lượng tử hoá INT8, Q1–Q8</td><td>Xong</td></tr><tr><td><code>tuan3_rag_bac_R1_R12</code></td><td>RAG từ con số 0</td><td>Xong R1–R10; tiếp theo R11–R16</td></tr></tbody></table>
+<p>Kế hoạch tiếp theo: kiểm chứng câu trả lời và bên trong chỉ mục vector (R11–R12), truy vấn
+tiếng Việt trên tài liệu tiếng Anh (R13–R16), rồi phần cứng, agent và fine-tune ở các tuần sau.</p>
+<h2 id="repository-có-gì">Repository có gì</h2>
+<p>Các notebook ở trên, cùng một tài liệu tham số (<code>THAM_SO_GPT.md</code>) giải thích từng
+hyperparameter kèm tác động đo được khi thay đổi nó, và các trang HTML trực quan hoá — heatmap
+token và luồng dữ liệu của LLM — để đi từng bước qua những gì diễn ra bên trong.</p>
+<p>Đây là dự án học tập và nó nói rõ điều đó. Giá trị của nó là lần tới khi một mô hình mất độ
+chính xác sau khi chuyển sang Hailo hay TensorRT, hoặc bộ truy xuất bắt đầu trả về sai tài
+liệu, tôi biết nên nghi ngờ layer nào — và đo nó ra sao.</p></div></div><div class="container stack-section" data-astro-cid-s35pujdj><section class="stack-block" data-astro-cid-k5dku353><h2 class="eyebrow" data-astro-cid-k5dku353><span data-l="en">Technical stack</span><span data-l="vi" lang="vi">Công nghệ sử dụng</span></h2><div class="groups" data-astro-cid-k5dku353><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Core</span><span data-l="vi" lang="vi">Cốt lõi</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>Python</li><li class="chip" data-astro-cid-k5dku353>PyTorch</li><li class="chip" data-astro-cid-k5dku353>NumPy</li><li class="chip" data-astro-cid-k5dku353>Jupyter</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Topics implemented</span><span data-l="vi" lang="vi">Các chủ đề đã cài đặt</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>Character tokenizer</li><li class="chip" data-astro-cid-k5dku353>BPE</li><li class="chip" data-astro-cid-k5dku353>Positional embedding</li><li class="chip" data-astro-cid-k5dku353>Multi-head attention</li><li class="chip" data-astro-cid-k5dku353>Causal masking</li><li class="chip" data-astro-cid-k5dku353>Layer normalisation</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Quantization</span><span data-l="vi" lang="vi">Lượng tử hoá</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>Affine INT8</li><li class="chip" data-astro-cid-k5dku353>Per-tensor scaling</li><li class="chip" data-astro-cid-k5dku353>Outlier clipping</li><li class="chip" data-astro-cid-k5dku353>Calibration sets</li><li class="chip" data-astro-cid-k5dku353>Dynamic quantization</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Retrieval</span><span data-l="vi" lang="vi">Truy xuất</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>BM25</li><li class="chip" data-astro-cid-k5dku353>Dense retrieval (e5-small)</li><li class="chip" data-astro-cid-k5dku353>RRF hybrid</li><li class="chip" data-astro-cid-k5dku353>Cross-encoder rerank</li><li class="chip" data-astro-cid-k5dku353>Chunking by token</li><li class="chip" data-astro-cid-k5dku353>recall@k · MRR · nDCG</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353>Runtime</h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>ONNX</li><li class="chip" data-astro-cid-k5dku353>ONNX Runtime GPU</li><li class="chip" data-astro-cid-k5dku353>sentence-transformers</li><li class="chip" data-astro-cid-k5dku353>Interactive HTML visualisers</li></ul></div></div></section></div><nav class="container pager" aria-label="More projects" data-astro-cid-s35pujdj><a class="pager-link prev" href="/NguyenBaThinh/projects/muscle-detection-robot-arm" data-astro-cid-s35pujdj><span class="pager-dir mono" data-astro-cid-s35pujdj><span data-l="en">Previous</span><span data-l="vi" lang="vi">Trước</span></span><span class="pager-title" data-astro-cid-s35pujdj><span data-l="en">Muscle Group Detection &amp; Robot Arm</span><span data-l="vi" lang="vi">Nhận diện nhóm cơ &amp; Cánh tay robot</span></span></a></nav></article></main><footer class="site-footer" data-astro-cid-jo6i4kqk><div class="container inner" data-astro-cid-jo6i4kqk><div class="col" data-astro-cid-jo6i4kqk><p class="eyebrow" data-astro-cid-jo6i4kqk><span data-l="en">Get in touch</span><span data-l="vi" lang="vi">Liên hệ</span></p><p class="pitch" data-astro-cid-jo6i4kqk><span data-l="en">Open to Edge AI, computer vision, embedded systems and AI automation roles. The fastest way to reach me is email.</span><span data-l="vi" lang="vi">Sẵn sàng cho các vị trí Edge AI, thị giác máy tính, hệ thống nhúng và tự động hoá AI. Cách nhanh nhất để liên hệ là qua email.</span></p><div class="actions" data-astro-cid-jo6i4kqk><a class="btn btn-primary" href="mailto:bathinh13579@gmail.com" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" data-astro-cid-jo6i4kqk><rect x="2.6" y="4.8" width="18.8" height="14.4" rx="2.4" data-astro-cid-jo6i4kqk></rect><path d="m3.4 6.6 8.6 6.2 8.6-6.2" data-astro-cid-jo6i4kqk></path></svg>bathinh13579@gmail.com</a><a class="btn btn-ghost" href="https://github.com/Nguyen-Thinh-48" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 1.8a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7 0-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.8z" data-astro-cid-jo6i4kqk></path></svg>GitHub</a><a class="btn btn-ghost" data-l="en" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh.pdf" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 3.4v11.4M7.8 10.6 12 14.8l4.2-4.2M4.4 18.2v1.2a1.2 1.2 0 0 0 1.2 1.2h12.8a1.2 1.2 0 0 0 1.2-1.2v-1.2" data-astro-cid-jo6i4kqk></path></svg>Download CV</a><a class="btn btn-ghost" data-l="vi" lang="vi" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh_VI.pdf" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 3.4v11.4M7.8 10.6 12 14.8l4.2-4.2M4.4 18.2v1.2a1.2 1.2 0 0 0 1.2 1.2h12.8a1.2 1.2 0 0 0 1.2-1.2v-1.2" data-astro-cid-jo6i4kqk></path></svg>Tải CV</a></div></div><div class="meta" data-astro-cid-jo6i4kqk><span data-astro-cid-jo6i4kqk><span data-l="en">Ho Chi Minh City, Vietnam</span><span data-l="vi" lang="vi">TP. Hồ Chí Minh, Việt Nam</span></span><span aria-hidden="true" data-astro-cid-jo6i4kqk>·</span><span data-astro-cid-jo6i4kqk>© 2026 Nguyen Ba Thinh</span><span aria-hidden="true" data-astro-cid-jo6i4kqk>·</span><span data-astro-cid-jo6i4kqk><span data-l="en">Built with Astro, deployed by GitHub Actions</span><span data-l="vi" lang="vi">Xây dựng bằng Astro, triển khai bằng GitHub Actions</span></span></div></div></footer></body></html>

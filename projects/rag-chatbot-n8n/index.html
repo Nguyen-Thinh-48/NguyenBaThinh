@@ -1,0 +1,359 @@
+<!DOCTYPE html><html lang="en" data-title-en="Self-Hosted RAG Support Agent — Nguyen Ba Thinh" data-title-vi="Agent RAG chăm sóc khách hàng tự host — Nguyen Ba Thinh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="Astro v7.2.6"><title>Self-Hosted RAG Support Agent — Nguyen Ba Thinh</title><meta name="description" content="An end-to-end AI chatbot for a premium kitchen-cabinet brand selling into the US and Canada, on a self-hosted n8n instance — my own Docker stack on a Linux VPS, not n8n Cloud — answering Messenger and Page comments from a PGVector knowledge base, with a LangChain sales-consultant agent, a webhook-plus-worker queue, self-syncing document ingestion and per-user human handover."><meta name="author" content="Nguyen Ba Thinh"><link rel="canonical" href="https://nguyen-thinh-48.github.io/NguyenBaThinh/projects/rag-chatbot-n8n/"><meta property="og:type" content="website"><meta property="og:site_name" content="Nguyen Ba Thinh"><meta property="og:title" content="Self-Hosted RAG Support Agent — Nguyen Ba Thinh"><meta property="og:description" content="An end-to-end AI chatbot for a premium kitchen-cabinet brand selling into the US and Canada, on a self-hosted n8n instance — my own Docker stack on a Linux VPS, not n8n Cloud — answering Messenger and Page comments from a PGVector knowledge base, with a LangChain sales-consultant agent, a webhook-plus-worker queue, self-syncing document ingestion and per-user human handover."><meta property="og:url" content="https://nguyen-thinh-48.github.io/NguyenBaThinh/projects/rag-chatbot-n8n/"><meta property="og:locale" content="en_US"><meta property="og:locale:alternate" content="vi_VN"><meta name="twitter:card" content="summary"><link rel="icon" type="image/svg+xml" href="/NguyenBaThinh/favicon.svg"><link rel="sitemap" href="/NguyenBaThinh/sitemap-index.xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"><script>
+      (() => {
+        const root = document.documentElement;
+        try {
+          const saved = localStorage.getItem('theme');
+          if (saved === 'dark' || saved === 'light') {
+            root.setAttribute('data-theme', saved);
+          }
+        } catch {
+          /* storage blocked — fall back to the OS preference */
+        }
+
+        // Language: an explicit choice wins, otherwise follow the browser.
+        let lang = null;
+        try {
+          lang = localStorage.getItem('lang');
+        } catch {
+          /* storage blocked */
+        }
+        if (lang !== 'en' && lang !== 'vi') {
+          lang = (navigator.language || '').toLowerCase().startsWith('vi') ? 'vi' : 'en';
+        }
+        root.setAttribute('data-lang', lang);
+        root.setAttribute('lang', lang);
+        const title = root.getAttribute('data-title-' + lang);
+        if (title) document.title = title;
+      })();
+    </script><link rel="stylesheet" href="/NguyenBaThinh/_astro/Base.BQUn7St1.css"><style>.stat-grid[data-astro-cid-ifrd74vy]{background:var(--border);border:1px solid var(--border);border-radius:var(--radius);grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;margin:0;display:grid;overflow:hidden}.stat[data-astro-cid-ifrd74vy]{background:var(--surface);flex-direction:column;gap:.35rem;padding:1.25rem 1.35rem;display:flex}.dense[data-astro-cid-ifrd74vy] .stat[data-astro-cid-ifrd74vy]{padding:1rem 1.15rem}.stat-value[data-astro-cid-ifrd74vy]{font-family:var(--font-display);letter-spacing:-.03em;color:var(--text);align-items:baseline;gap:.18em;font-weight:600;display:flex}.num[data-astro-cid-ifrd74vy]{font-size:clamp(1.75rem,1.4rem + 1.4vw,2.4rem);line-height:1}.dense[data-astro-cid-ifrd74vy] .num[data-astro-cid-ifrd74vy]{font-size:clamp(1.5rem,1.25rem + 1vw,1.95rem)}.unit[data-astro-cid-ifrd74vy]{font-family:var(--font-mono);color:var(--signal);font-size:.9rem;font-weight:500}.stat-label[data-astro-cid-ifrd74vy]{color:var(--text-muted);text-wrap:pretty;margin:0;font-size:.83rem;line-height:1.5}
+.stack-block[data-astro-cid-k5dku353]{flex-direction:column;gap:1.5rem;display:flex}.groups[data-astro-cid-k5dku353]{grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1.5rem 2rem;display:grid}.group[data-astro-cid-k5dku353]{border-top:1px solid var(--border);flex-direction:column;gap:.7rem;padding-top:.9rem;display:flex}.group-name[data-astro-cid-k5dku353]{font-family:var(--font-display);letter-spacing:.02em;color:var(--text);font-size:.82rem;font-weight:600}
+</style><link rel="stylesheet" href="/NguyenBaThinh/_astro/_..Dk0FVXV0.css"><style>.video-figure[data-astro-cid-yngxbivw]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-yngxbivw]{aspect-ratio:var(--ratio);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);background:#05070b;position:relative;overflow:hidden}.portrait[data-astro-cid-yngxbivw] .frame[data-astro-cid-yngxbivw],.portrait[data-astro-cid-yngxbivw] figcaption[data-astro-cid-yngxbivw]{max-width:340px;margin-inline:auto}video[data-astro-cid-yngxbivw]{object-fit:contain;background:#05070b;width:100%;height:100%}figcaption[data-astro-cid-yngxbivw]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style><style>.media-split[data-astro-cid-aeoobavx]{align-items:start;gap:1.75rem;margin-block:clamp(2.25rem,5vw,3.5rem);display:grid}.col-text[data-astro-cid-aeoobavx]>:first-child,.col-text[data-astro-cid-aeoobavx] h3:first-child,.col-text[data-astro-cid-aeoobavx] h2:first-child{margin-top:0}.col-text[data-astro-cid-aeoobavx]{max-width:62ch}@media (width>=900px){.media-split[data-astro-cid-aeoobavx]{grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);align-items:center;gap:clamp(2rem,4vw,3.25rem)}.media-split[data-astro-cid-aeoobavx].wide{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr)}.media-split[data-astro-cid-aeoobavx].flip .col-text[data-astro-cid-aeoobavx]{order:2}.media-split[data-astro-cid-aeoobavx].flip .col-media[data-astro-cid-aeoobavx]{order:1}.media-split[data-astro-cid-aeoobavx].sticky{align-items:start}.media-split[data-astro-cid-aeoobavx].sticky .col-media[data-astro-cid-aeoobavx]{top:calc(var(--header-h) + 1.75rem);position:sticky}}.diagram[data-astro-cid-mb5gojzx]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-mb5gojzx]{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm);padding:1.35rem;overflow-x:auto}.flush[data-astro-cid-mb5gojzx] .frame[data-astro-cid-mb5gojzx]{padding:.5rem}.frame[data-astro-cid-mb5gojzx] svg{width:100%;height:auto;display:block}.frame[data-astro-cid-mb5gojzx] .d-box{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1.2px}.frame[data-astro-cid-mb5gojzx] .d-box-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-box-signal{fill:var(--signal-soft);stroke:var(--signal);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-label{fill:var(--text);font-family:var(--font-display);font-size:12.5px;font-weight:600}.frame[data-astro-cid-mb5gojzx] .d-sub{fill:var(--text-muted);font-family:var(--font-mono);font-size:9.5px}.frame[data-astro-cid-mb5gojzx] .d-edge{stroke:var(--border-strong);stroke-width:1.3px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-accent{stroke:var(--accent);stroke-width:1.5px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-label{fill:var(--text-faint);font-family:var(--font-mono);font-size:8px}.frame[data-astro-cid-mb5gojzx] .d-arrow{fill:var(--border-strong)}.frame[data-astro-cid-mb5gojzx] .d-arrow-accent{fill:var(--accent)}figcaption[data-astro-cid-mb5gojzx]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style><style>.media-split[data-astro-cid-aeoobavx]{align-items:start;gap:1.75rem;margin-block:clamp(2.25rem,5vw,3.5rem);display:grid}.col-text[data-astro-cid-aeoobavx]>:first-child,.col-text[data-astro-cid-aeoobavx] h3:first-child,.col-text[data-astro-cid-aeoobavx] h2:first-child{margin-top:0}.col-text[data-astro-cid-aeoobavx]{max-width:62ch}@media (width>=900px){.media-split[data-astro-cid-aeoobavx]{grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);align-items:center;gap:clamp(2rem,4vw,3.25rem)}.media-split[data-astro-cid-aeoobavx].wide{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr)}.media-split[data-astro-cid-aeoobavx].flip .col-text[data-astro-cid-aeoobavx]{order:2}.media-split[data-astro-cid-aeoobavx].flip .col-media[data-astro-cid-aeoobavx]{order:1}.media-split[data-astro-cid-aeoobavx].sticky{align-items:start}.media-split[data-astro-cid-aeoobavx].sticky .col-media[data-astro-cid-aeoobavx]{top:calc(var(--header-h) + 1.75rem);position:sticky}}.diagram[data-astro-cid-mb5gojzx]{flex-direction:column;gap:.6rem;margin:0;display:flex}.frame[data-astro-cid-mb5gojzx]{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm);padding:1.35rem;overflow-x:auto}.flush[data-astro-cid-mb5gojzx] .frame[data-astro-cid-mb5gojzx]{padding:.5rem}.frame[data-astro-cid-mb5gojzx] svg{width:100%;height:auto;display:block}.frame[data-astro-cid-mb5gojzx] .d-box{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1.2px}.frame[data-astro-cid-mb5gojzx] .d-box-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-box-signal{fill:var(--signal-soft);stroke:var(--signal);stroke-width:1.4px}.frame[data-astro-cid-mb5gojzx] .d-label{fill:var(--text);font-family:var(--font-display);font-size:12.5px;font-weight:600}.frame[data-astro-cid-mb5gojzx] .d-sub{fill:var(--text-muted);font-family:var(--font-mono);font-size:9.5px}.frame[data-astro-cid-mb5gojzx] .d-edge{stroke:var(--border-strong);stroke-width:1.3px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-accent{stroke:var(--accent);stroke-width:1.5px;fill:none}.frame[data-astro-cid-mb5gojzx] .d-edge-label{fill:var(--text-faint);font-family:var(--font-mono);font-size:8px}.frame[data-astro-cid-mb5gojzx] .d-arrow{fill:var(--border-strong)}.frame[data-astro-cid-mb5gojzx] .d-arrow-accent{fill:var(--accent)}figcaption[data-astro-cid-mb5gojzx]{font-family:var(--font-mono);color:var(--text-faint);padding-left:.1rem;font-size:.735rem;line-height:1.55}
+</style></head><body><a class="skip-link" href="#main"><span data-l="en">Skip to content</span><span data-l="vi" lang="vi">Bỏ qua tới nội dung</span></a><header class="site-header" data-astro-cid-wpvy4v7s><div class="container bar" data-astro-cid-wpvy4v7s><a class="brand" href="/NguyenBaThinh/" data-astro-cid-wpvy4v7s><span class="brand-mark" aria-hidden="true" data-astro-cid-wpvy4v7s>NT</span><span class="brand-text" data-astro-cid-wpvy4v7s><strong data-astro-cid-wpvy4v7s>Nguyen Ba Thinh</strong><span class="brand-role" data-astro-cid-wpvy4v7s><span data-l="en">AIoT &amp; Edge AI Engineer</span><span data-l="vi" lang="vi">Kỹ sư AIoT &amp; Edge AI</span></span></span></a><nav class="nav" aria-label="Primary" data-astro-cid-wpvy4v7s><a href="/NguyenBaThinh/" class="nav-link nav-home" data-astro-cid-wpvy4v7s><span data-l="en">Home</span><span data-l="vi" lang="vi">Trang chủ</span></a><a href="/NguyenBaThinh/projects" class="nav-link active" aria-current="page" data-astro-cid-wpvy4v7s><span data-l="en">Work</span><span data-l="vi" lang="vi">Dự án</span></a><a href="/NguyenBaThinh/about" class="nav-link" data-astro-cid-wpvy4v7s><span data-l="en">About</span><span data-l="vi" lang="vi">Giới thiệu</span></a><a class="nav-link nav-cv" data-l="en" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh.pdf" target="_blank" rel="noopener" data-astro-cid-wpvy4v7s>CV</a><a class="nav-link nav-cv" data-l="vi" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh_VI.pdf" target="_blank" rel="noopener" data-astro-cid-wpvy4v7s>CV</a><button id="lang-toggle" class="lang-toggle" type="button" aria-label="Switch language — Chuyển ngôn ngữ" title="English / Tiếng Việt" data-astro-cid-zh35qibh><span class="opt opt-en" data-astro-cid-zh35qibh>EN</span><span class="opt opt-vi" data-astro-cid-zh35qibh>VI</span></button><script>
+  (() => {
+    const btn = document.getElementById('lang-toggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.getAttribute('data-lang') === 'vi' ? 'en' : 'vi';
+
+      root.setAttribute('data-lang', next);
+      root.setAttribute('lang', next);
+      const title = root.getAttribute(`data-title-${next}`);
+      if (title) document.title = title;
+
+      try {
+        localStorage.setItem('lang', next);
+      } catch {
+        /* private mode / blocked storage — the choice just won't persist */
+      }
+    });
+  })();
+</script><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle colour theme — Đổi giao diện sáng/tối" title="Toggle colour theme — Đổi giao diện sáng/tối" data-astro-cid-l6lhmie6><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" data-astro-cid-l6lhmie6><circle cx="12" cy="12" r="4.2" data-astro-cid-l6lhmie6></circle><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4" data-astro-cid-l6lhmie6></path></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-l6lhmie6><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.9 6.9 0 0 0 10.7 10.7z" data-astro-cid-l6lhmie6></path></svg></button><script>
+  (() => {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const explicit = root.getAttribute('data-theme');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const currentlyDark = explicit ? explicit === 'dark' : systemDark;
+      const next = currentlyDark ? 'light' : 'dark';
+
+      root.setAttribute('data-theme', next);
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        /* private mode / blocked storage — the choice just won't persist */
+      }
+    });
+  })();
+</script></nav></div></header><main id="main"><article class="case" data-astro-cid-s35pujdj><header class="case-header" data-astro-cid-s35pujdj><div class="container" data-astro-cid-s35pujdj><a class="back" href="/NguyenBaThinh/projects" data-astro-cid-s35pujdj><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-s35pujdj><path d="M19 12H6M11.5 5.5 5 12l6.5 6.5" data-astro-cid-s35pujdj></path></svg><span data-l="en">All work</span><span data-l="vi" lang="vi">Tất cả dự án</span></a><p class="meta mono" data-astro-cid-s35pujdj><span data-astro-cid-s35pujdj>BEE HOOME TECHNOLOGY JSC</span><span aria-hidden="true" data-astro-cid-s35pujdj>·</span><span data-astro-cid-s35pujdj><span data-l="en">Fullstack Engineer</span><span data-l="vi" lang="vi">Kỹ sư Fullstack</span></span><span aria-hidden="true" data-astro-cid-s35pujdj>·</span><span data-astro-cid-s35pujdj><span data-l="en">Apr 2026 — Sep 2026</span><span data-l="vi" lang="vi">T4/2026 — T9/2026</span></span></p><h1 data-astro-cid-s35pujdj><span data-l="en">Self-Hosted RAG Support Agent</span><span data-l="vi" lang="vi">Agent RAG chăm sóc khách hàng tự host</span></h1><p class="lede" data-astro-cid-s35pujdj><span data-l="en">A 24/7 Facebook &amp; Instagram sales assistant that answers only from the company&#39;s documents, queues its own work, and steps aside the moment a human takes over.</span><span data-l="vi" lang="vi">Trợ lý bán hàng 24/7 cho Facebook &amp; Instagram, chỉ trả lời dựa trên tài liệu của công ty, tự xếp hàng công việc và nhường lời ngay khi nhân viên tiếp quản.</span></p><ul class="chip-list" data-astro-cid-s35pujdj><li class="chip chip-accent" data-astro-cid-s35pujdj>LLM</li><li class="chip chip-accent" data-astro-cid-s35pujdj>RAG</li><li class="chip chip-accent" data-astro-cid-s35pujdj>Backend</li><li class="chip chip-accent" data-astro-cid-s35pujdj>Docker</li></ul><div class="source" data-astro-cid-s35pujdj><span class="source-note" data-astro-cid-mjdyrksv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" data-astro-cid-mjdyrksv><rect x="4.4" y="10.4" width="15.2" height="9.4" rx="2.2" data-astro-cid-mjdyrksv></rect><path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8" data-astro-cid-mjdyrksv></path></svg><span data-astro-cid-mjdyrksv><strong data-astro-cid-mjdyrksv><span data-l="en">Source is private</span><span data-l="vi" lang="vi">Mã nguồn không công khai</span></strong><span class="note" data-astro-cid-mjdyrksv><span data-l="en">Production automation for a client brand. The workflow and knowledge base are not public, and every credential, endpoint and identifier is omitted here.</span><span data-l="vi" lang="vi">Hệ thống tự động hoá thực tế cho thương hiệu khách hàng. Workflow và kho tri thức không công khai, mọi thông tin xác thực, endpoint và định danh đều được lược bỏ.</span></span></span></span></div></div></header><div class="container hero-media" data-astro-cid-s35pujdj><figure class="figure" data-astro-cid-khyig4bw><div class="frame" style="--ratio: 16 / 9; --fit: contain" data-astro-cid-khyig4bw><img src="/NguyenBaThinh/media/rag-chatbot-n8n/vector-space.svg" alt="Retrieval as it actually works — a query embedding and the nearest document chunks in the vector store." loading="lazy" decoding="async" data-astro-cid-khyig4bw></div><figcaption data-astro-cid-khyig4bw><span data-l="en">Retrieval as it actually works — a query embedding and the nearest document chunks in the vector store.</span><span data-l="vi" lang="vi">Truy xuất trong thực tế — embedding của câu hỏi và các đoạn tài liệu gần nhất trong vector store.</span></figcaption></figure></div><div class="container results" data-astro-cid-s35pujdj><h2 class="eyebrow" data-astro-cid-s35pujdj><span data-l="en">Results</span><span data-l="vi" lang="vi">Kết quả</span></h2><dl class="stat-grid dense" data-astro-cid-ifrd74vy><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>3</span><span class="unit" data-astro-cid-ifrd74vy>s</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Worker poll interval — the webhook itself answers instantly</span><span data-l="vi" lang="vi">Chu kỳ quét của worker — bản thân webhook phản hồi ngay lập tức</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>800</span><span class="unit" data-astro-cid-ifrd74vy>tok</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Chunk size, with 100 tokens of overlap</span><span data-l="vi" lang="vi">Kích thước mỗi chunk, chồng lấn 100 token</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>3</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Top-k chunks retrieved and handed to the model per question</span><span data-l="vi" lang="vi">Số chunk top-k được truy xuất và đưa cho mô hình mỗi câu hỏi</span></dd></div><div class="stat" data-astro-cid-ifrd74vy><dt class="stat-value" data-astro-cid-ifrd74vy><span class="num" data-astro-cid-ifrd74vy>2</span></dt><dd class="stat-label" data-astro-cid-ifrd74vy><span data-l="en">Containers I run myself on a Hostinger VPS — n8n and Postgres, no managed service</span><span data-l="vi" lang="vi">Container tôi tự vận hành trên Hostinger VPS — n8n và Postgres, không dùng dịch vụ managed</span></dd></div></dl></div><div class="container" data-astro-cid-s35pujdj><div class="case-body prose" data-l="en" data-astro-cid-s35pujdj><h2 id="the-problem">The problem</h2>
+<p>The client is a premium kitchen-cabinet brand selling into the US and Canada. Customers ask about products on
+Messenger and in the comments under a Page post, usually outside working hours. A cold
+enquiry by morning is normally a lost one.</p>
+<p>A generic chatbot makes that worse rather than better. If it invents a price, a lead
+time or a feature that does not exist, the brand pays for the mistake. So the
+requirement was narrower than “add an LLM”: <strong>answer from the company’s own documents,
+or admit you do not know and hand the person to a human.</strong></p>
+<h2 id="why-the-webhook-does-not-answer-the-question">Why the webhook does not answer the question</h2>
+<p>This is the decision the rest of the system is built around, and it is the one that
+took the longest to get right.</p>
+<p>Facebook expects a <code>200</code> back from your webhook quickly. Retrieval plus a model call
+is nowhere near quick enough. The naive workflow — receive, retrieve, generate, reply,
+<em>then</em> respond — times out, and Facebook retries, and now the customer gets the same
+answer three times.</p>
+<p>So the webhook does almost nothing. It parses the event, drops obvious noise, writes
+one row to a table with <code>Status: pending</code>, and returns. <strong>A separate schedule trigger
+polls that table every three seconds</strong> and does the slow work outside the request.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="a-row-is-a-job">A row is a job</h3><p>Every message becomes a row whose <code>Status</code> walks a small state machine:
+<code>pending → processing → Done</code>, with <code>Error</code> and <code>skipped</code> as the other exits.</p><p>That one column buys a lot:</p><ul>
+<li><strong>Crash safety.</strong> A row stuck on <code>processing</code> is visible. Nothing is lost in memory.</li>
+<li><strong>Idempotency.</strong> A Facebook retry finds the message already recorded rather than
+generating a second answer.</li>
+<li><strong>Back-pressure.</strong> Messages are claimed one at a time, so a burst of traffic queues
+instead of firing twenty concurrent model calls.</li>
+<li><strong>Observability.</strong> “What happened to this customer’s message?” is a table lookup,
+not a log grep.</li>
+</ul><p>It is the same pattern as a job queue with a database backend. n8n does not ship one,
+so the Data Table became it.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 424" role="img" aria-label="Queue architecture: the Facebook webhook responds immediately and writes a pending row; a schedule trigger every three seconds claims the row, marks it processing, runs the agent, and marks it done or error."><defs><marker id="q-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="42" rx="9" class="d-box-accent"></rect><text x="260" y="29" text-anchor="middle" class="d-label">Facebook webhook (POST)</text><text x="260" y="44" text-anchor="middle" class="d-sub">responds 200 before any AI work starts</text><line x1="260" y1="52" x2="260" y2="76" class="d-edge" marker-end="url(#q-arrow)"></line><rect x="40" y="78" width="440" height="42" rx="9" class="d-box"></rect><text x="260" y="97" text-anchor="middle" class="d-label">Parse + filter</text><text x="260" y="112" text-anchor="middle" class="d-sub">echo · the Page’s own replies · /bot_on commands</text><line x1="260" y1="120" x2="260" y2="144" class="d-edge" marker-end="url(#q-arrow)"></line><rect x="40" y="146" width="440" height="46" rx="9" class="d-box-signal"></rect><text x="260" y="166" text-anchor="middle" class="d-label">Queue row — Status: pending</text><text x="260" y="181" text-anchor="middle" class="d-sub">n8n Data Table · one row per inbound message</text><line x1="30" y1="208" x2="490" y2="208" class="d-edge" stroke-dasharray="5 4"></line><text x="260" y="222" text-anchor="middle" class="d-edge-label">the HTTP request has already ended here</text><rect x="40" y="234" width="440" height="42" rx="9" class="d-box-accent"></rect><text x="260" y="253" text-anchor="middle" class="d-label">Schedule trigger — every 3 s</text><text x="260" y="268" text-anchor="middle" class="d-sub">reads pending rows · one at a time</text><line x1="260" y1="276" x2="260" y2="300" class="d-edge-accent" marker-end="url(#q-arrow)"></line><text x="272" y="292" class="d-edge-label">claim the row</text><rect x="40" y="302" width="440" height="42" rx="9" class="d-box"></rect><text x="260" y="321" text-anchor="middle" class="d-label">Status: processing</text><text x="260" y="336" text-anchor="middle" class="d-sub">retrieval → agent → send the reply</text><line x1="150" y1="344" x2="150" y2="368" class="d-edge" marker-end="url(#q-arrow)"></line><line x1="370" y1="344" x2="370" y2="368" class="d-edge" marker-end="url(#q-arrow)"></line><rect x="40" y="370" width="200" height="42" rx="9" class="d-box-signal"></rect><text x="140" y="389" text-anchor="middle" class="d-label">Done</text><text x="140" y="404" text-anchor="middle" class="d-sub">reply delivered</text><rect x="280" y="370" width="200" height="42" rx="9" class="d-box"></rect><text x="380" y="389" text-anchor="middle" class="d-label">Error</text><text x="380" y="404" text-anchor="middle" class="d-sub">Telegram alert to me</text></svg></div><figcaption data-astro-cid-mb5gojzx>Ingest and processing are separate workflows joined only by a row in a table. Below the dashed line, Facebook has already been answered.</figcaption></figure></div></div>
+<h2 id="retrieval-and-what-is-actually-happening">Retrieval, and what is actually happening</h2>
+<p>The part that matters for grounding is small and worth being precise about, because
+“we used RAG” hides all of it.</p>
+<div class="media-split flip wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="retrieval-is-a-tool-not-a-preprocessing-step">Retrieval is a tool, not a preprocessing step</h3><p>The knowledge base is wired to the agent as a <strong>tool it can call</strong>, not as text
+stapled to the front of the prompt. The agent decides a lookup is needed, issues the
+query, and reasons over what comes back. Questions that need no documents skip
+retrieval entirely.</p><p>Three settings do most of the work:</p><ul>
+<li><strong><code>top-k = 3</code>.</strong> More chunks is not better. Past a handful, the relevant passage
+gets buried and answers drift toward whatever filler was retrieved alongside it.</li>
+<li><strong><code>temperature = 0.3</code>.</strong> Support answers should be reproducible. Two customers
+asking the same question should get the same reply.</li>
+<li><strong>A 400-token output cap</strong>, backed by a length rule in the instructions. Nobody
+reads a nine-paragraph Messenger reply.</li>
+</ul><p>The question and the documents go through the <strong>same embedding model</strong>. That is not
+an optimisation, it is a correctness requirement — vectors from two different models
+live in different spaces and their cosine distance means nothing.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 372" role="img" aria-label="Retrieval path: the customer question is embedded, compared by cosine similarity against chunk vectors in PGVector, and the top three chunks are given to a Gemini agent along with the last four turns of chat memory."><defs><marker id="r-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="30" text-anchor="middle" class="d-label">Customer question</text><text x="260" y="45" text-anchor="middle" class="d-sub">free text, any language</text><line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#r-arrow)"></line><rect x="40" y="80" width="440" height="44" rx="9" class="d-box-accent"></rect><text x="260" y="100" text-anchor="middle" class="d-label">Embed the question</text><text x="260" y="115" text-anchor="middle" class="d-sub">Gemini embeddings — same model used for the documents</text><line x1="260" y1="124" x2="260" y2="148" class="d-edge-accent" marker-end="url(#r-arrow)"></line><text x="272" y="140" class="d-edge-label">one vector</text><rect x="40" y="150" width="440" height="52" rx="9" class="d-box-accent"></rect><text x="260" y="172" text-anchor="middle" class="d-label">PGVector similarity search</text><text x="260" y="188" text-anchor="middle" class="d-sub">cosine distance over chunk vectors · top-k = 3</text><line x1="260" y1="202" x2="260" y2="226" class="d-edge-accent" marker-end="url(#r-arrow)"></line><text x="272" y="218" class="d-edge-label">3 chunks of source text</text><rect x="40" y="228" width="440" height="60" rx="9" class="d-box-signal"></rect><text x="260" y="250" text-anchor="middle" class="d-label">Agent — Gemini Flash Lite</text><text x="260" y="265" text-anchor="middle" class="d-sub">temperature 0.3 · max 400 output tokens</text><text x="260" y="279" text-anchor="middle" class="d-sub">+ last 4 turns from Postgres chat memory</text><line x1="260" y1="288" x2="260" y2="312" class="d-edge" marker-end="url(#r-arrow)"></line><rect x="40" y="314" width="440" height="48" rx="9" class="d-box"></rect><text x="260" y="335" text-anchor="middle" class="d-label">Answer — or an honest “I don’t have that”</text><text x="260" y="350" text-anchor="middle" class="d-sub">out-of-scope questions escalate to a human</text></svg></div><figcaption data-astro-cid-mb5gojzx>The retrieval path. The model never sees the knowledge base — it sees three chunks that were closest to the question.</figcaption></figure></div></div>
+<h2 id="the-knowledge-base-syncs-itself">The knowledge base syncs itself</h2>
+<p>Every RAG system dies the same death: the index goes stale, and the bot starts
+confidently quoting a catalogue from last season. If updating what the bot knows needs
+an engineer, it stops happening.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="why-800-and-100">Why 800 and 100</h3><p><strong>800 tokens</strong> is roughly one coherent topic — a full procedure or a complete policy
+paragraph. Smaller chunks retrieve cleanly but arrive without the context that makes
+them usable; larger ones dilute the embedding until it stops matching anything
+specific.</p><p><strong>100 tokens of overlap</strong> exists because a splitter has no idea where an idea ends. It
+will happily cut a seven-step procedure between step four and step five. Overlap means
+the boundary appears in both chunks, so whichever one is retrieved still carries the
+seam.</p><p><strong>The comparison step</strong> is the unglamorous one that matters most. Without it, every
+trigger re-downloads and re-embeds the whole folder — burning embedding quota and
+filling the store with duplicate vectors that then compete with each other at query
+time. Only new and changed files go through.</p><p>The person who owns the product information drops a file in a Drive folder. That is
+the entire publishing workflow, and it is why the knowledge base is still current.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 356" role="img" aria-label="Ingestion pipeline: a Google Drive trigger lists knowledge base files, compares them against files already on disk, downloads only what is new, splits into 800-token chunks with 100 token overlap, embeds and upserts into PGVector."><defs><marker id="kb2-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="30" text-anchor="middle" class="d-label">Google Drive trigger</text><text x="260" y="45" text-anchor="middle" class="d-sub">a document is added or changed</text><line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#kb2-arrow)"></line><rect x="40" y="80" width="440" height="48" rx="9" class="d-box-accent"></rect><text x="260" y="101" text-anchor="middle" class="d-label">Compare against what is already stored</text><text x="260" y="116" text-anchor="middle" class="d-sub">Drive listing vs. local files · only differences continue</text><line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#kb2-arrow)"></line><text x="272" y="144" class="d-edge-label">new and changed only</text><rect x="40" y="154" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="174" text-anchor="middle" class="d-label">Download and load</text><text x="260" y="189" text-anchor="middle" class="d-sub">filename kept as chunk metadata</text><line x1="260" y1="198" x2="260" y2="222" class="d-edge" marker-end="url(#kb2-arrow)"></line><rect x="40" y="224" width="440" height="48" rx="9" class="d-box"></rect><text x="260" y="245" text-anchor="middle" class="d-label">Token splitter</text><text x="260" y="260" text-anchor="middle" class="d-sub">800-token chunks · 100-token overlap</text><line x1="260" y1="272" x2="260" y2="296" class="d-edge-accent" marker-end="url(#kb2-arrow)"></line><rect x="40" y="298" width="440" height="48" rx="9" class="d-box-signal"></rect><text x="260" y="319" text-anchor="middle" class="d-label">Embed → upsert into PGVector</text><text x="260" y="334" text-anchor="middle" class="d-sub">no manual step anywhere in the chain</text></svg></div><figcaption data-astro-cid-mb5gojzx>Ingestion. The comparison step is what stops the same document being re-embedded on every run.</figcaption></figure></div></div>
+<h2 id="two-agents-not-one">Two agents, not one</h2>
+<p>Messenger and Page comments look similar and behave differently. A private message is a
+conversation; a public comment is a reply visible to everyone else reading the post.</p>
+<p>They run as <strong>separate agents with separate memory tables</strong>, keyed differently — a
+Messenger session is the sender, a comment session is scoped to the comment thread — so
+a public thread never inherits context from someone’s private conversation, which would
+be both wrong and a privacy problem.</p>
+<p>Both share one instruction set with a strict precedence:</p>
+<ol>
+<li><strong>Reply in the language the customer wrote in.</strong> The knowledge base is in English;
+retrieved English text must never drag the reply into English. This needed explicit,
+repeated instruction — it is the rule models break most often.</li>
+<li><strong>The retrieved chunks are the only source of truth.</strong> Facts, step counts, button
+labels and policy terms come from the documents, in the documents’ wording.</li>
+<li><strong>Not in the chunks? Say so and escalate.</strong> Never fill the gap.</li>
+<li><strong>Answer length caps</strong>, with numbered steps for procedures.</li>
+<li><strong>Never disclose infrastructure</strong>, internal identifiers, admin workflows or roadmap
+material, even when asked directly.</li>
+</ol>
+<p>Rule 3 is the whole product. A support bot that says “I don’t have that, here is who
+does” is useful. One that guesses is a liability.</p>
+<h2 id="a-sales-consultant-not-a-faq-page">A sales consultant, not a FAQ page</h2>
+<p>The Messenger agent is built with LangChain on Gemini as an <strong>AI sales consultant</strong>
+rather than a question-answering box. It consults on the products, asks what the
+customer is actually planning, and <strong>qualifies the lead</strong> — so when a salesperson takes
+over, the conversation is already warm and the useful details are already in the thread.</p>
+<p>It speaks through a <strong>persona built for the Canadian market</strong>, with controlled answer
+rules on top of the grounding rules above. The persona is part of the instructions, not
+left to the model, so the voice stays the same from one conversation to the next.</p>
+<h2 id="handing-over-to-a-human">Handing over to a human</h2>
+<p>A per-user toggle lives in its own table. A salesperson sends a command in the thread,
+the bot goes quiet <strong>for that customer only</strong>, and everyone else keeps being served.
+Switching it back is the opposite command.</p>
+<p>Two filters keep the system from talking to itself:</p>
+<ul>
+<li><strong>Echo filtering.</strong> The Page’s own outgoing messages come back through the webhook.
+Without a filter the bot reads its own reply as a new customer message and answers it,
+forever.</li>
+<li><strong>Command filtering.</strong> Operator commands are routed to the toggle instead of being
+treated as questions.</li>
+</ul>
+<h2 id="when-it-breaks">When it breaks</h2>
+<p>Model calls fail. The agents retry, and a failure that survives the retry does not
+disappear quietly: the row is marked <code>Error</code> and <strong>a Telegram message arrives with the
+customer’s ID and what they asked</strong>, so a human can pick it up while the enquiry is
+still warm.</p>
+<p>The failure mode I care about is not “the bot was wrong” — it is “nobody knew the bot
+was wrong”. Every exit from the state machine is recorded.</p>
+<h2 id="self-hosted-not-n8n-cloud">Self-hosted, not n8n Cloud</h2>
+<p>Worth being precise about, because “built on n8n” usually means someone clicked
+around n8n Cloud. This does not run there.</p>
+<p>The whole stack — the <strong>n8n instance itself</strong> and <strong>PostgreSQL with the PGVector
+extension</strong> — runs in <strong>Docker Compose on a Hostinger VPS</strong> that I set up and maintain.
+I own the containers, the database, the backups and the upgrades.</p>
+<p>That was a deliberate choice over the managed product:</p>
+<ul>
+<li><strong>Customer conversations stay on infrastructure the company controls.</strong> For a brand
+handling enquiries and contact details, that is not a preference. On the hosted
+product, every message would transit someone else’s tenant.</li>
+<li><strong>Cost is a fixed monthly server bill</strong>, not per-execution pricing that scales with
+exactly the thing you are trying to encourage. A chatbot that succeeds gets more
+expensive on a metered plan.</li>
+<li><strong>No workflow-execution limits</strong> to design around, and no waiting on a vendor to
+enable a node.</li>
+<li><strong>Backup, upgrades and scaling become ordinary ops problems</strong> with ordinary answers,
+instead of tier limits.</li>
+</ul>
+<p>The trade is real — nobody else is on call for that VPS, and a bad <code>docker compose</code>
+day is mine to fix. At this workload it has been the right side of the trade, and
+running it myself is where most of what I learned about the system came from.</p>
+<h2 id="understanding-it-from-the-bottom-not-the-docs">Understanding it from the bottom, not the docs</h2>
+<p>I could wire this together because I had already built the pieces by hand. The
+<a href="/NguyenBaThinh/projects/llm-from-scratch">transformer and INT8 project</a> is where I wrote the
+tokenizer, the attention, the embedding table and the quantizer myself.</p>
+<p>That is why the choices above are choices rather than defaults. Knowing that an
+embedding is a learned vector and cosine similarity is just a normalised dot product is
+what makes “use the same model for queries and documents” obviously mandatory instead of
+a line in a tutorial. Knowing what a context window costs is what makes a 4-turn memory
+and a 3-chunk retrieval a budget rather than a guess.</p>
+<p>n8n is the fast way to ship it. Knowing what is underneath is what makes it debuggable
+when it misbehaves.</p>
+<h2 id="what-i-built">What I built</h2>
+<p>The workflows, the queue and state machine, the RAG pipeline and its self-syncing
+ingestion, the sales-consultant agent, its persona and answer rules, the handover and
+deduplication logic, the error alerting, and the Docker deployment — end to end, into
+production for the brand.</p></div><div class="case-body prose" data-l="vi" lang="vi" data-astro-cid-s35pujdj><h2 id="bài-toán">Bài toán</h2>
+<p>Khách hàng là một thương hiệu tủ bếp cao cấp bán sang thị trường Mỹ và Canada. Người mua hỏi
+về sản phẩm qua Messenger và
+trong phần bình luận dưới bài đăng của Page, thường là ngoài giờ làm việc. Một câu hỏi để
+nguội tới sáng hôm sau thường là một khách hàng đã mất.</p>
+<p>Một chatbot chung chung còn làm tình hình tệ hơn. Nếu nó bịa ra giá, thời gian giao hàng
+hay một tính năng không tồn tại, thương hiệu phải trả giá cho sai lầm đó. Vì vậy yêu cầu hẹp
+hơn nhiều so với “gắn thêm một LLM”: <strong>trả lời từ chính tài liệu của công ty, hoặc thừa nhận
+là không biết và chuyển khách cho người thật.</strong></p>
+<h2 id="vì-sao-webhook-không-trả-lời-câu-hỏi">Vì sao webhook không trả lời câu hỏi</h2>
+<p>Đây là quyết định mà cả hệ thống xoay quanh, và cũng là thứ tốn nhiều thời gian nhất để làm
+đúng.</p>
+<p>Facebook muốn webhook trả về <code>200</code> thật nhanh. Truy xuất cộng với một lần gọi mô hình thì
+không thể nhanh như vậy. Workflow ngây thơ — nhận, truy xuất, sinh câu trả lời, gửi, <em>rồi
+mới</em> phản hồi — sẽ bị timeout, Facebook gửi lại, và khách hàng nhận cùng một câu trả lời ba
+lần.</p>
+<p>Vì thế webhook gần như không làm gì. Nó phân tích sự kiện, bỏ các nhiễu rõ ràng, ghi một
+dòng vào bảng với <code>Status: pending</code>, rồi trả về. <strong>Một schedule trigger riêng quét bảng đó
+mỗi ba giây</strong> và làm phần việc chậm bên ngoài request.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="mỗi-dòng-là-một-job">Mỗi dòng là một job</h3><p>Mỗi tin nhắn trở thành một dòng có cột <code>Status</code> đi qua một state machine nhỏ:
+<code>pending → processing → Done</code>, với <code>Error</code> và <code>skipped</code> là các lối ra còn lại.</p><p>Một cột đó mang lại rất nhiều:</p><ul>
+<li><strong>An toàn khi sập.</strong> Một dòng kẹt ở <code>processing</code> là nhìn thấy được. Không mất gì trong bộ nhớ.</li>
+<li><strong>Idempotency.</strong> Khi Facebook gửi lại, tin nhắn đã được ghi nhận nên không sinh câu trả lời
+thứ hai.</li>
+<li><strong>Back-pressure.</strong> Tin nhắn được nhận lần lượt, nên khi lưu lượng tăng đột biến thì chúng
+xếp hàng thay vì bắn ra hai mươi lần gọi mô hình cùng lúc.</li>
+<li><strong>Dễ quan sát.</strong> “Tin nhắn của khách này đã đi đâu?” chỉ là một lần tra bảng, không phải
+grep log.</li>
+</ul><p>Đây chính là mô hình job queue dùng cơ sở dữ liệu làm backend. n8n không có sẵn, nên Data
+Table trở thành hàng đợi.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 424" role="img" aria-label="Kiến trúc hàng đợi: webhook Facebook phản hồi ngay và ghi một dòng pending; schedule trigger mỗi ba giây nhận dòng đó, đánh dấu processing, chạy agent, rồi đánh dấu done hoặc error."><defs><marker id="q-arrow-vi" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="42" rx="9" class="d-box-accent"></rect><text x="260" y="29" text-anchor="middle" class="d-label">Facebook webhook (POST)</text><text x="260" y="44" text-anchor="middle" class="d-sub">trả 200 trước khi bắt đầu bất kỳ xử lý AI nào</text><line x1="260" y1="52" x2="260" y2="76" class="d-edge" marker-end="url(#q-arrow-vi)"></line><rect x="40" y="78" width="440" height="42" rx="9" class="d-box"></rect><text x="260" y="97" text-anchor="middle" class="d-label">Phân tích + lọc</text><text x="260" y="112" text-anchor="middle" class="d-sub">echo · tin trả lời của chính Page · lệnh /bot_on</text><line x1="260" y1="120" x2="260" y2="144" class="d-edge" marker-end="url(#q-arrow-vi)"></line><rect x="40" y="146" width="440" height="46" rx="9" class="d-box-signal"></rect><text x="260" y="166" text-anchor="middle" class="d-label">Dòng hàng đợi — Status: pending</text><text x="260" y="181" text-anchor="middle" class="d-sub">n8n Data Table · mỗi tin nhắn đến là một dòng</text><line x1="30" y1="208" x2="490" y2="208" class="d-edge" stroke-dasharray="5 4"></line><text x="260" y="222" text-anchor="middle" class="d-edge-label">request HTTP đã kết thúc ở đây</text><rect x="40" y="234" width="440" height="42" rx="9" class="d-box-accent"></rect><text x="260" y="253" text-anchor="middle" class="d-label">Schedule trigger — mỗi 3 giây</text><text x="260" y="268" text-anchor="middle" class="d-sub">đọc các dòng pending · lần lượt từng dòng</text><line x1="260" y1="276" x2="260" y2="300" class="d-edge-accent" marker-end="url(#q-arrow-vi)"></line><text x="272" y="292" class="d-edge-label">nhận dòng</text><rect x="40" y="302" width="440" height="42" rx="9" class="d-box"></rect><text x="260" y="321" text-anchor="middle" class="d-label">Status: processing</text><text x="260" y="336" text-anchor="middle" class="d-sub">truy xuất → agent → gửi trả lời</text><line x1="150" y1="344" x2="150" y2="368" class="d-edge" marker-end="url(#q-arrow-vi)"></line><line x1="370" y1="344" x2="370" y2="368" class="d-edge" marker-end="url(#q-arrow-vi)"></line><rect x="40" y="370" width="200" height="42" rx="9" class="d-box-signal"></rect><text x="140" y="389" text-anchor="middle" class="d-label">Done</text><text x="140" y="404" text-anchor="middle" class="d-sub">đã gửi trả lời</text><rect x="280" y="370" width="200" height="42" rx="9" class="d-box"></rect><text x="380" y="389" text-anchor="middle" class="d-label">Error</text><text x="380" y="404" text-anchor="middle" class="d-sub">cảnh báo Telegram cho tôi</text></svg></div><figcaption data-astro-cid-mb5gojzx>Tiếp nhận và xử lý là hai workflow riêng, chỉ nối với nhau bằng một dòng trong bảng. Bên dưới đường nét đứt, Facebook đã được phản hồi xong.</figcaption></figure></div></div>
+<h2 id="truy-xuất-và-điều-thực-sự-diễn-ra">Truy xuất, và điều thực sự diễn ra</h2>
+<p>Phần quyết định việc trả lời có căn cứ thì nhỏ và đáng được nói chính xác, vì câu “chúng tôi
+dùng RAG” che giấu toàn bộ chi tiết.</p>
+<div class="media-split flip wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="truy-xuất-là-một-tool-không-phải-bước-tiền-xử-lý">Truy xuất là một tool, không phải bước tiền xử lý</h3><p>Kho tri thức được nối với agent như một <strong>tool mà nó có thể gọi</strong>, chứ không phải đoạn văn
+bản dán sẵn vào đầu prompt. Agent tự quyết định khi nào cần tra cứu, tự đặt truy vấn và suy
+luận trên kết quả trả về. Câu hỏi không cần tài liệu thì bỏ qua truy xuất hoàn toàn.</p><p>Ba thiết lập làm phần lớn công việc:</p><ul>
+<li><strong><code>top-k = 3</code>.</strong> Nhiều chunk hơn không có nghĩa là tốt hơn. Quá vài đoạn, đoạn liên quan
+bị chìm và câu trả lời trôi về phía những nội dung độn được truy xuất kèm theo.</li>
+<li><strong><code>temperature = 0.3</code>.</strong> Câu trả lời hỗ trợ cần lặp lại được. Hai khách hỏi cùng một câu
+nên nhận cùng một câu trả lời.</li>
+<li><strong>Giới hạn 400 token đầu ra</strong>, kèm quy tắc độ dài trong hướng dẫn. Không ai đọc một tin
+nhắn Messenger dài chín đoạn.</li>
+</ul><p>Câu hỏi và tài liệu đi qua <strong>cùng một mô hình embedding</strong>. Đó không phải tối ưu hoá mà là
+yêu cầu về tính đúng đắn — vector từ hai mô hình khác nhau nằm trong hai không gian khác
+nhau, và khoảng cách cosine giữa chúng không có ý nghĩa gì.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 372" role="img" aria-label="Đường truy xuất: câu hỏi của khách được embedding, so sánh cosine similarity với các vector chunk trong PGVector, ba chunk gần nhất được đưa cho agent Gemini cùng bốn lượt hội thoại gần nhất."><defs><marker id="r-arrow-vi" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="30" text-anchor="middle" class="d-label">Câu hỏi của khách</text><text x="260" y="45" text-anchor="middle" class="d-sub">văn bản tự do, bất kỳ ngôn ngữ nào</text><line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#r-arrow-vi)"></line><rect x="40" y="80" width="440" height="44" rx="9" class="d-box-accent"></rect><text x="260" y="100" text-anchor="middle" class="d-label">Embedding câu hỏi</text><text x="260" y="115" text-anchor="middle" class="d-sub">Gemini embeddings — cùng mô hình dùng cho tài liệu</text><line x1="260" y1="124" x2="260" y2="148" class="d-edge-accent" marker-end="url(#r-arrow-vi)"></line><text x="272" y="140" class="d-edge-label">một vector</text><rect x="40" y="150" width="440" height="52" rx="9" class="d-box-accent"></rect><text x="260" y="172" text-anchor="middle" class="d-label">Tìm kiếm tương đồng PGVector</text><text x="260" y="188" text-anchor="middle" class="d-sub">khoảng cách cosine trên vector chunk · top-k = 3</text><line x1="260" y1="202" x2="260" y2="226" class="d-edge-accent" marker-end="url(#r-arrow-vi)"></line><text x="272" y="218" class="d-edge-label">3 đoạn văn bản gốc</text><rect x="40" y="228" width="440" height="60" rx="9" class="d-box-signal"></rect><text x="260" y="250" text-anchor="middle" class="d-label">Agent — Gemini Flash Lite</text><text x="260" y="265" text-anchor="middle" class="d-sub">temperature 0,3 · tối đa 400 token đầu ra</text><text x="260" y="279" text-anchor="middle" class="d-sub">+ 4 lượt gần nhất từ Postgres chat memory</text><line x1="260" y1="288" x2="260" y2="312" class="d-edge" marker-end="url(#r-arrow-vi)"></line><rect x="40" y="314" width="440" height="48" rx="9" class="d-box"></rect><text x="260" y="335" text-anchor="middle" class="d-label">Câu trả lời — hoặc một câu “tôi không có thông tin đó”</text><text x="260" y="350" text-anchor="middle" class="d-sub">câu hỏi ngoài phạm vi được chuyển cho người thật</text></svg></div><figcaption data-astro-cid-mb5gojzx>Đường truy xuất. Mô hình không bao giờ thấy toàn bộ kho tri thức — nó chỉ thấy ba đoạn gần với câu hỏi nhất.</figcaption></figure></div></div>
+<h2 id="kho-tri-thức-tự-đồng-bộ">Kho tri thức tự đồng bộ</h2>
+<p>Mọi hệ thống RAG đều chết theo cùng một kiểu: chỉ mục bị cũ, và bot bắt đầu tự tin trích
+dẫn catalogue của mùa trước. Nếu muốn cập nhật kiến thức cho bot mà phải cần kỹ sư, việc đó
+sẽ không bao giờ được làm.</p>
+<div class="media-split wide" data-astro-cid-aeoobavx><div class="col-text prose" data-astro-cid-aeoobavx><h3 id="vì-sao-là-800-và-100">Vì sao là 800 và 100</h3><p><strong>800 token</strong> xấp xỉ một chủ đề trọn vẹn — một quy trình đầy đủ hay một đoạn chính sách
+hoàn chỉnh. Chunk nhỏ hơn truy xuất gọn nhưng thiếu ngữ cảnh để dùng được; chunk lớn hơn
+làm loãng embedding tới mức không còn khớp với điều gì cụ thể.</p><p><strong>100 token chồng lấn</strong> tồn tại vì bộ chia không biết một ý kết thúc ở đâu. Nó sẵn sàng cắt
+một quy trình bảy bước ngay giữa bước bốn và bước năm. Chồng lấn giúp đường cắt xuất hiện ở
+cả hai chunk, nên chunk nào được truy xuất cũng mang theo phần nối.</p><p><strong>Bước so sánh</strong> là bước không hào nhoáng nhưng quan trọng nhất. Thiếu nó, mỗi lần trigger
+sẽ tải và embedding lại cả thư mục — tốn quota embedding và lấp đầy kho bằng các vector
+trùng lặp, rồi chúng lại cạnh tranh nhau lúc truy vấn. Chỉ file mới và file đã sửa mới đi
+tiếp.</p><p>Người phụ trách thông tin sản phẩm chỉ cần thả một file vào thư mục Drive. Đó là toàn bộ quy
+trình xuất bản, và là lý do kho tri thức luôn được cập nhật.</p></div><div class="col-media" data-astro-cid-aeoobavx><figure class="diagram" data-astro-cid-mb5gojzx><div class="frame" data-astro-cid-mb5gojzx><svg viewBox="0 0 520 356" role="img" aria-label="Pipeline nạp dữ liệu: Google Drive trigger liệt kê file kho tri thức, so sánh với file đã lưu, chỉ tải phần mới, chia thành chunk 800 token chồng lấn 100 token, embedding và upsert vào PGVector."><defs><marker id="kb2-arrow-vi" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9 z" class="d-arrow"></path></marker></defs><rect x="40" y="10" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="30" text-anchor="middle" class="d-label">Google Drive trigger</text><text x="260" y="45" text-anchor="middle" class="d-sub">có tài liệu được thêm hoặc thay đổi</text><line x1="260" y1="54" x2="260" y2="78" class="d-edge" marker-end="url(#kb2-arrow-vi)"></line><rect x="40" y="80" width="440" height="48" rx="9" class="d-box-accent"></rect><text x="260" y="101" text-anchor="middle" class="d-label">So sánh với những gì đã lưu</text><text x="260" y="116" text-anchor="middle" class="d-sub">danh sách trên Drive vs. file cục bộ · chỉ phần khác đi tiếp</text><line x1="260" y1="128" x2="260" y2="152" class="d-edge-accent" marker-end="url(#kb2-arrow-vi)"></line><text x="272" y="144" class="d-edge-label">chỉ file mới và đã sửa</text><rect x="40" y="154" width="440" height="44" rx="9" class="d-box"></rect><text x="260" y="174" text-anchor="middle" class="d-label">Tải về và nạp</text><text x="260" y="189" text-anchor="middle" class="d-sub">tên file được giữ làm metadata của chunk</text><line x1="260" y1="198" x2="260" y2="222" class="d-edge" marker-end="url(#kb2-arrow-vi)"></line><rect x="40" y="224" width="440" height="48" rx="9" class="d-box"></rect><text x="260" y="245" text-anchor="middle" class="d-label">Token splitter</text><text x="260" y="260" text-anchor="middle" class="d-sub">chunk 800 token · chồng lấn 100 token</text><line x1="260" y1="272" x2="260" y2="296" class="d-edge-accent" marker-end="url(#kb2-arrow-vi)"></line><rect x="40" y="298" width="440" height="48" rx="9" class="d-box-signal"></rect><text x="260" y="319" text-anchor="middle" class="d-label">Embedding → upsert vào PGVector</text><text x="260" y="334" text-anchor="middle" class="d-sub">không có bước thủ công nào trong cả chuỗi</text></svg></div><figcaption data-astro-cid-mb5gojzx>Nạp dữ liệu. Bước so sánh là thứ ngăn một tài liệu bị embedding lại ở mỗi lần chạy.</figcaption></figure></div></div>
+<h2 id="hai-agent-không-phải-một">Hai agent, không phải một</h2>
+<p>Messenger và bình luận Page trông giống nhau nhưng hành xử khác nhau. Tin nhắn riêng là một
+cuộc hội thoại; bình luận công khai là câu trả lời mà mọi người đọc bài đăng đều thấy.</p>
+<p>Chúng chạy như <strong>hai agent riêng với hai bảng bộ nhớ riêng</strong>, dùng khoá khác nhau — phiên
+Messenger theo người gửi, phiên bình luận theo luồng bình luận — để một luồng công khai không
+bao giờ kế thừa ngữ cảnh từ cuộc trò chuyện riêng tư của ai đó, điều vừa sai vừa là vấn đề
+quyền riêng tư.</p>
+<p>Cả hai dùng chung một bộ hướng dẫn với thứ tự ưu tiên nghiêm ngặt:</p>
+<ol>
+<li><strong>Trả lời bằng ngôn ngữ khách đã dùng.</strong> Kho tri thức viết bằng tiếng Anh; đoạn tiếng Anh
+được truy xuất không bao giờ được kéo câu trả lời sang tiếng Anh. Điều này cần hướng dẫn
+rõ ràng và lặp lại — đây là quy tắc mô hình hay phá nhất.</li>
+<li><strong>Các chunk truy xuất được là nguồn sự thật duy nhất.</strong> Dữ kiện, số bước, tên nút bấm và
+điều khoản chính sách đều lấy từ tài liệu, theo đúng câu chữ của tài liệu.</li>
+<li><strong>Không có trong chunk? Nói rõ và chuyển cho người thật.</strong> Không bao giờ tự lấp chỗ trống.</li>
+<li><strong>Giới hạn độ dài câu trả lời</strong>, có đánh số bước với các quy trình.</li>
+<li><strong>Không tiết lộ hạ tầng</strong>, định danh nội bộ, quy trình quản trị hay lộ trình sản phẩm, kể
+cả khi bị hỏi thẳng.</li>
+</ol>
+<p>Quy tắc 3 chính là toàn bộ sản phẩm. Một bot hỗ trợ nói “tôi không có thông tin đó, đây là
+người có” thì hữu ích. Một bot đoán mò thì là rủi ro.</p>
+<h2 id="tư-vấn-viên-bán-hàng-không-phải-trang-faq">Tư vấn viên bán hàng, không phải trang FAQ</h2>
+<p>Agent trên Messenger được xây bằng LangChain trên Gemini như một <strong>tư vấn viên bán hàng AI</strong>
+chứ không phải một hộp hỏi-đáp. Nó tư vấn sản phẩm, hỏi khách thực sự đang dự định gì, và
+<strong>sàng lọc khách hàng tiềm năng</strong> — để khi nhân viên kinh doanh tiếp quản, cuộc trò chuyện
+đã “ấm” và các thông tin cần thiết đã nằm sẵn trong luồng tin nhắn.</p>
+<p>Nó trò chuyện bằng một <strong>persona dành cho thị trường Canada</strong>, với các quy tắc phản hồi được
+kiểm soát chặt, cộng thêm các quy tắc bám tài liệu ở trên. Persona nằm trong hướng dẫn chứ không
+để mô hình tự quyết, nên giọng nói luôn nhất quán giữa các cuộc hội thoại.</p>
+<h2 id="bàn-giao-cho-người-thật">Bàn giao cho người thật</h2>
+<p>Một công tắc theo từng khách được lưu trong bảng riêng. Nhân viên gửi một lệnh trong luồng
+chat, bot im lặng <strong>chỉ với khách đó</strong>, và mọi khách khác vẫn được phục vụ bình thường. Bật
+lại chỉ cần lệnh ngược lại.</p>
+<p>Hai bộ lọc ngăn hệ thống tự nói chuyện với chính nó:</p>
+<ul>
+<li><strong>Lọc echo.</strong> Tin nhắn gửi đi của chính Page quay ngược lại qua webhook. Không có bộ lọc,
+bot sẽ đọc câu trả lời của chính nó như tin nhắn mới của khách và trả lời nó, mãi mãi.</li>
+<li><strong>Lọc lệnh.</strong> Lệnh của người vận hành được chuyển tới công tắc thay vì bị xem như câu hỏi.</li>
+</ul>
+<h2 id="khi-có-sự-cố">Khi có sự cố</h2>
+<p>Lời gọi mô hình có thể thất bại. Agent sẽ thử lại, và lỗi nào vẫn còn sau khi thử lại sẽ không
+biến mất trong im lặng: dòng đó được đánh dấu <code>Error</code> và <strong>một tin nhắn Telegram gửi tới kèm
+ID khách hàng và câu họ đã hỏi</strong>, để người thật xử lý khi khách vẫn còn đang quan tâm.</p>
+<p>Kiểu thất bại tôi lo ngại không phải “bot trả lời sai” — mà là “không ai biết bot đã trả lời
+sai”. Mọi lối ra khỏi state machine đều được ghi lại.</p>
+<h2 id="tự-host-không-phải-n8n-cloud">Tự host, không phải n8n Cloud</h2>
+<p>Điều này cần nói rõ, vì “xây trên n8n” thường có nghĩa là ai đó kéo thả trên n8n Cloud. Hệ
+thống này không chạy ở đó.</p>
+<p>Toàn bộ stack — <strong>chính instance n8n</strong> và <strong>PostgreSQL với extension PGVector</strong> — chạy bằng
+<strong>Docker Compose trên một Hostinger VPS</strong> do tôi tự thiết lập và vận hành. Tôi sở hữu các
+container, cơ sở dữ liệu, bản sao lưu và việc nâng cấp.</p>
+<p>Đó là lựa chọn có chủ đích thay vì dùng sản phẩm managed:</p>
+<ul>
+<li><strong>Hội thoại của khách nằm trên hạ tầng công ty kiểm soát.</strong> Với một thương hiệu xử lý yêu
+cầu và thông tin liên hệ của khách, đó không phải sở thích. Trên bản hosted, mọi tin nhắn đều
+đi qua tenant của người khác.</li>
+<li><strong>Chi phí là một hoá đơn server cố định hằng tháng</strong>, không phải tính theo số lần chạy — thứ
+tăng đúng theo điều bạn đang muốn khuyến khích. Chatbot càng thành công càng đắt trên gói
+tính theo lượng dùng.</li>
+<li><strong>Không có giới hạn số lần chạy workflow</strong> phải thiết kế né tránh, và không phải chờ nhà cung
+cấp bật một node.</li>
+<li><strong>Sao lưu, nâng cấp và mở rộng trở thành bài toán vận hành bình thường</strong> với lời giải bình
+thường, thay vì giới hạn theo gói.</li>
+</ul>
+<p>Đánh đổi là có thật — không ai khác trực VPS đó, và một ngày <code>docker compose</code> tồi tệ là việc
+của tôi. Với khối lượng công việc này, đó là phía đúng của sự đánh đổi, và tự vận hành nó là
+nơi tôi học được nhiều nhất về hệ thống.</p>
+<h2 id="hiểu-từ-gốc-không-chỉ-từ-tài-liệu">Hiểu từ gốc, không chỉ từ tài liệu</h2>
+<p>Tôi ghép được hệ thống này vì đã tự tay xây từng mảnh trước đó. Dự án
+<a href="/NguyenBaThinh/projects/llm-from-scratch">transformer và INT8</a> là nơi tôi tự viết tokenizer, attention,
+bảng embedding và bộ lượng tử hoá.</p>
+<p>Đó là lý do các lựa chọn ở trên là lựa chọn chứ không phải mặc định. Hiểu rằng embedding là một
+vector được học và cosine similarity chỉ là tích vô hướng đã chuẩn hoá khiến “dùng cùng mô hình
+cho câu hỏi và tài liệu” hiển nhiên là bắt buộc chứ không phải một dòng trong tutorial. Hiểu
+cái giá của context window khiến bộ nhớ 4 lượt và truy xuất 3 chunk là một ngân sách chứ không
+phải phỏng đoán.</p>
+<p>n8n là cách nhanh để đưa sản phẩm ra. Hiểu những gì nằm bên dưới là điều giúp debug được khi
+nó trục trặc.</p>
+<h2 id="phần-tôi-đã-xây-dựng">Phần tôi đã xây dựng</h2>
+<p>Các workflow, hàng đợi và state machine, pipeline RAG cùng cơ chế tự đồng bộ dữ liệu, agent tư
+vấn bán hàng với persona và quy tắc trả lời, logic bàn giao và chống trùng lặp, cảnh báo lỗi,
+và việc triển khai bằng Docker — trọn vẹn từ đầu tới cuối, đưa vào vận hành thực tế cho thương
+hiệu.</p></div></div><div class="container stack-section" data-astro-cid-s35pujdj><section class="stack-block" data-astro-cid-k5dku353><h2 class="eyebrow" data-astro-cid-k5dku353><span data-l="en">Technical stack</span><span data-l="vi" lang="vi">Công nghệ sử dụng</span></h2><div class="groups" data-astro-cid-k5dku353><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Orchestration</span><span data-l="vi" lang="vi">Điều phối</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>n8n (self-hosted)</li><li class="chip" data-astro-cid-k5dku353>Webhooks</li><li class="chip" data-astro-cid-k5dku353>Schedule triggers</li><li class="chip" data-astro-cid-k5dku353>n8n Data Tables</li><li class="chip" data-astro-cid-k5dku353>JavaScript</li><li class="chip" data-astro-cid-k5dku353>JSON</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353>AI</h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>LangChain AI Agent</li><li class="chip" data-astro-cid-k5dku353>Google Gemini Flash Lite</li><li class="chip" data-astro-cid-k5dku353>Gemini embeddings</li><li class="chip" data-astro-cid-k5dku353>RAG retrieval tool</li><li class="chip" data-astro-cid-k5dku353>Token splitter</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Data</span><span data-l="vi" lang="vi">Dữ liệu</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>PostgreSQL</li><li class="chip" data-astro-cid-k5dku353>PGVector</li><li class="chip" data-astro-cid-k5dku353>Postgres chat memory</li><li class="chip" data-astro-cid-k5dku353>Vector similarity search</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Integrations</span><span data-l="vi" lang="vi">Tích hợp</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>Facebook Graph API v19.0</li><li class="chip" data-astro-cid-k5dku353>Google Drive API</li><li class="chip" data-astro-cid-k5dku353>Messaging platform APIs</li><li class="chip" data-astro-cid-k5dku353>Telegram alerts</li></ul></div><div class="group" data-astro-cid-k5dku353><h3 class="group-name" data-astro-cid-k5dku353><span data-l="en">Infrastructure</span><span data-l="vi" lang="vi">Hạ tầng</span></h3><ul class="chip-list" data-astro-cid-k5dku353><li class="chip" data-astro-cid-k5dku353>Docker</li><li class="chip" data-astro-cid-k5dku353>Docker Compose</li><li class="chip" data-astro-cid-k5dku353>Linux</li><li class="chip" data-astro-cid-k5dku353>Hostinger VPS</li><li class="chip" data-astro-cid-k5dku353>Self-hosted n8n</li></ul></div></div></section></div><nav class="container pager" aria-label="More projects" data-astro-cid-s35pujdj><a class="pager-link prev" href="/NguyenBaThinh/projects/edge-ai-face-recognition" data-astro-cid-s35pujdj><span class="pager-dir mono" data-astro-cid-s35pujdj><span data-l="en">Previous</span><span data-l="vi" lang="vi">Trước</span></span><span class="pager-title" data-astro-cid-s35pujdj><span data-l="en">Edge AI Face Recognition</span><span data-l="vi" lang="vi">Nhận diện khuôn mặt trên Edge AI</span></span></a><a class="pager-link next" href="/NguyenBaThinh/projects/muscle-detection-robot-arm" data-astro-cid-s35pujdj><span class="pager-dir mono" data-astro-cid-s35pujdj><span data-l="en">Next</span><span data-l="vi" lang="vi">Tiếp theo</span></span><span class="pager-title" data-astro-cid-s35pujdj><span data-l="en">Muscle Group Detection &amp; Robot Arm</span><span data-l="vi" lang="vi">Nhận diện nhóm cơ &amp; Cánh tay robot</span></span></a></nav></article></main><footer class="site-footer" data-astro-cid-jo6i4kqk><div class="container inner" data-astro-cid-jo6i4kqk><div class="col" data-astro-cid-jo6i4kqk><p class="eyebrow" data-astro-cid-jo6i4kqk><span data-l="en">Get in touch</span><span data-l="vi" lang="vi">Liên hệ</span></p><p class="pitch" data-astro-cid-jo6i4kqk><span data-l="en">Open to Edge AI, computer vision, embedded systems and AI automation roles. The fastest way to reach me is email.</span><span data-l="vi" lang="vi">Sẵn sàng cho các vị trí Edge AI, thị giác máy tính, hệ thống nhúng và tự động hoá AI. Cách nhanh nhất để liên hệ là qua email.</span></p><div class="actions" data-astro-cid-jo6i4kqk><a class="btn btn-primary" href="mailto:bathinh13579@gmail.com" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" data-astro-cid-jo6i4kqk><rect x="2.6" y="4.8" width="18.8" height="14.4" rx="2.4" data-astro-cid-jo6i4kqk></rect><path d="m3.4 6.6 8.6 6.2 8.6-6.2" data-astro-cid-jo6i4kqk></path></svg>bathinh13579@gmail.com</a><a class="btn btn-ghost" href="https://github.com/Nguyen-Thinh-48" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 1.8a10.2 10.2 0 0 0-3.2 19.9c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7 0-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.2 10.2 0 0 0 12 1.8z" data-astro-cid-jo6i4kqk></path></svg>GitHub</a><a class="btn btn-ghost" data-l="en" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh.pdf" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 3.4v11.4M7.8 10.6 12 14.8l4.2-4.2M4.4 18.2v1.2a1.2 1.2 0 0 0 1.2 1.2h12.8a1.2 1.2 0 0 0 1.2-1.2v-1.2" data-astro-cid-jo6i4kqk></path></svg>Download CV</a><a class="btn btn-ghost" data-l="vi" lang="vi" href="/NguyenBaThinh/cv/Nguyen_Ba_Thinh_VI.pdf" target="_blank" rel="noopener" data-astro-cid-jo6i4kqk><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-jo6i4kqk><path d="M12 3.4v11.4M7.8 10.6 12 14.8l4.2-4.2M4.4 18.2v1.2a1.2 1.2 0 0 0 1.2 1.2h12.8a1.2 1.2 0 0 0 1.2-1.2v-1.2" data-astro-cid-jo6i4kqk></path></svg>Tải CV</a></div></div><div class="meta" data-astro-cid-jo6i4kqk><span data-astro-cid-jo6i4kqk><span data-l="en">Ho Chi Minh City, Vietnam</span><span data-l="vi" lang="vi">TP. Hồ Chí Minh, Việt Nam</span></span><span aria-hidden="true" data-astro-cid-jo6i4kqk>·</span><span data-astro-cid-jo6i4kqk>© 2026 Nguyen Ba Thinh</span><span aria-hidden="true" data-astro-cid-jo6i4kqk>·</span><span data-astro-cid-jo6i4kqk><span data-l="en">Built with Astro, deployed by GitHub Actions</span><span data-l="vi" lang="vi">Xây dựng bằng Astro, triển khai bằng GitHub Actions</span></span></div></div></footer></body></html>
